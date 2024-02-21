@@ -18,7 +18,9 @@ module ibex_load_store_unit #(
   parameter bit          MemECC        = 1'b0,
   parameter int unsigned MemDataWidth  = MemECC ? 32 + 7 : 32,
   parameter int unsigned CheriCapWidth = 91,
+  /* verilator lint_off unused */
   parameter bit [CheriCapWidth-1:0] CheriNullCap = 91'h0
+  /* verilator lint_on unused */
 ) (
   input  logic         clk_i,
   input  logic         rst_ni,

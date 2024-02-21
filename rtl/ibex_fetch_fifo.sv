@@ -198,9 +198,9 @@ module ibex_fetch_fifo #(
   // Increment the address by two every time a compressed instruction is popped
   // When using TestRIG, the instruction is always aligned and in the bottom
   // bits of the read data, so only use the aligned signal
-  if (TestRIG==1) begin
+  if (TestRIG==1) begin : gen_addr_incr_testrig
       assign addr_incr_two = aligned_is_compressed;
-  end else begin
+  end else begin : gen_addr_incr_default
       assign addr_incr_two = instr_addr_q[1] ? unaligned_is_compressed :
                                                aligned_is_compressed;
   end

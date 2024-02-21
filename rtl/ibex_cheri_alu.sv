@@ -2,6 +2,9 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
+// XXX disable warnings for unused signals, since we get handles for signals we may not need
+/* verilator lint_off UNUSED */
+
 module ibex_cheri_alu #(
   parameter int unsigned CheriCapWidth = 91,
   parameter int unsigned IntWidth = 32
@@ -1061,3 +1064,5 @@ module_wrap64_getRepresentableLength module_getRepresentableLength_a (
 
   end
 endmodule
+
+/* verilator lint_on UNUSED */

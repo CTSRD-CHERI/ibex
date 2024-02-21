@@ -178,7 +178,9 @@ module ibex_top import ibex_pkg::*; #(
   // Combined data and integrity for data and instruction busses
   logic [MemDataWidth-1:0]     data_wdata_core;
   logic [MemDataWidth-1:0]     data_rdata_core;
+  /* verilator lint_off UNDRIVEN */
   logic [MemDataWidth-1:0]     instr_rdata_core;
+  /* verilator lint_on UNDRIVEN */
 
   // Core <-> RAMs signals
   logic [IC_NUM_WAYS-1:0]      ic_tag_req;

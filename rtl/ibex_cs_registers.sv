@@ -257,7 +257,9 @@ module ibex_cs_registers #(
   logic [31:0]              getOffset_o;
 
   logic [CheriCapWidth-1:0]  isSealed_cap_i;
+  /* verilator lint_off UNUSED */
   logic [CheriKindWidth-1:0] getKind_o;      //intermediate value
+  /* verilator lint_on UNUSED */
   logic                      isSealed_o;
   /* verilator lint_on IMPERFECTSCH */
   /* verilator lint_on UNOPTFLAT */
@@ -359,10 +361,10 @@ module ibex_cs_registers #(
   logic        illegal_scr_write;
   logic        illegal_scr_asr;
 
-  logic [7:0]  unused_boot_addr;
+  logic [31:0]  unused_boot_addr;
   logic [2:0]  unused_csr_addr;
 
-  assign unused_boot_addr = boot_addr_i[7:0];
+  assign unused_boot_addr = boot_addr_i[31:0];
 
   /////////////
   // CSR reg //

@@ -218,7 +218,7 @@ module ibex_id_stage #(
   input  logic [4:0]                rf_waddr_wb_i,
   input  logic [CheriCapWidth-1:0]  rf_wdata_cap_fwd_wb_i,
   input  logic [31:0]               rf_wdata_int_fwd_wb_i,
-  input  logic                      rf_wcap_fwd_wb_i,
+  //input  logic                      rf_wcap_fwd_wb_i,
   input  logic                      rf_write_wb_i,
 
   output  logic                     en_wb_o,

@@ -49,7 +49,9 @@ module ibex_if_stage import ibex_pkg::*; #(
   output logic                        instr_intg_err_o,
 
   // CHERI exceptions
+  /* verilator lint_off UNUSED */
   input ibex_pkg::cheri_exc_t         instr_cheri_exc_i,
+  /* verilator lint_on UNUSED */
   input logic                         instr_upper_exc_i,
   input logic                         instr_upper_exc_2_i,
 
@@ -105,7 +107,9 @@ module ibex_if_stage import ibex_pkg::*; #(
   input  pc_sel_e                     pc_mux_i,                 // selector for PC multiplexer
   input  logic                        nt_branch_mispredict_i,   // Not-taken branch in ID/EX was
                                                                 // mispredicted (predicted taken)
+  /* verilator lint_off UNUSED */
   input  logic [31:0]                 nt_branch_addr_i,         // Not-taken branch address in ID/EX
+  /* verilator lint_on UNUSED */
   input  exc_pc_sel_e                 exc_pc_mux_i,             // selects ISR address
   input  exc_cause_t                  exc_cause,                // selects ISR address for
                                                                 // vectorized interrupt lines
@@ -120,7 +124,9 @@ module ibex_if_stage import ibex_pkg::*; #(
 
   // jump and branch target
   input  logic [CheriCapWidth-1:0]    branch_target_cap_ex_i,   // branch/jump target capability
+  /* verilator lint_off UNUSED */
   input  logic [31:0]                 branch_target_int_ex_i,   // branch/jump target offset
+  /* verilator lint_on UNUSED */
   output logic [31:0]                 pc_set_target_o,          // when PC is set, this will be the
                                                                 // PC that will be jumped to
                                                                 // (used for RVFI)
@@ -151,8 +157,10 @@ module ibex_if_stage import ibex_pkg::*; #(
   // instruction-specific exceptions
   cheri_instr_exc_t  instr_cheri_instr_exc;
 
-  logic              instr_cheri_len_exc;
   logic              instr_lower_exc;
+  /*
+  // XXX These appear not to be hooked up to anything
+  logic              instr_cheri_len_exc;
 
   // whether the next error to come out of the prefetch fifo was a CHERI error
   logic                     err_is_cheri_q;
@@ -161,6 +169,7 @@ module ibex_if_stage import ibex_pkg::*; #(
   // error data. The first error encountered will flush all the subsequent
   // ones that are in the pipeline.
   logic                     err_in_fifo_q;
+  */
 
   // The PCC of the instruction returned by the prefetcher/cache last cycle.
   // When a jump occurs, this is updated to the jump target (and then not
@@ -178,7 +187,9 @@ module ibex_if_stage import ibex_pkg::*; #(
 
   logic              fetch_valid_raw;
   logic              fetch_valid;
+  /* verilator lint_off unused */
   logic              fetch_imm;
+  /* verilator lint_on unused */
   logic              fetch_ready;
   logic       [31:0] fetch_rdata;
   logic       [31:0] fetch_addr;
@@ -225,11 +236,13 @@ module ibex_if_stage import ibex_pkg::*; #(
 
   logic              unused_pcc_setOffset_exact, unused_jump_pcc_setOffset_exact;
 
+  logic              unused_instr_rdata_tag;
+
   // The PCC that might be jumped to (depending on whether the pc_set_i signal
   // is high this cycle)
   logic [CheriCapWidth-1:0] jump_pcc;
   logic [CheriCapWidth-1:0] jump_pcc_setOffset_cap;
-  logic [31:0]              jump_pcc_newOffset;
+  //logic [31:0]              jump_pcc_newOffset;
 
   // The PCC assuming no jump (ie the PCC of the instruction being returned by
   // the prefetcher/cache this cycle)
@@ -256,6 +269,8 @@ module ibex_if_stage import ibex_pkg::*; #(
   assign unused_csr_mtvec = csr_mtvec_i[7:0];
 
   assign unused_exc_cause = |{exc_cause.irq_ext, exc_cause.irq_int};
+
+  assign unused_instr_rdata_tag = instr_rdata_i[32];
 
   // exception PC selection mux
   always_comb begin : exc_pc_mux
@@ -375,7 +390,7 @@ module ibex_if_stage import ibex_pkg::*; #(
   // if both halves of this access were disallowed, then it would definitely
   // cause an exception regardless of whether we were just fetching the upper
   // part or just the lower part
-  assign instr_cheri_len_exc = instr_lower_exc & instr_upper_exc_i;
+  //assign instr_cheri_len_exc = instr_lower_exc & instr_upper_exc_i;
 
   always_comb begin
     instr_cheri_instr_exc.tag_violation            = instr_cheri_exc_i.tag_violation;

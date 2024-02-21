@@ -54,7 +54,7 @@ module ibex_wb_stage #(
 
   output logic [CheriCapWidth-1:0] rf_wdata_cap_fwd_wb_o,
   output logic [31:0]              rf_wdata_int_fwd_wb_o,
-  output logic                     rf_wcap_fwd_wb_o,
+  //output logic                     rf_wcap_fwd_wb_o,
 
   output logic [4:0]               rf_waddr_wb_o,
   output logic [CheriCapWidth-1:0] rf_wdata_cap_wb_o,

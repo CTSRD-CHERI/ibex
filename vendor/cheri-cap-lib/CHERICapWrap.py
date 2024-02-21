@@ -161,7 +161,8 @@ class SystemVerilogGenerator(Generator):
     pkg_def_text += "endpackage\n"
 
     # module definition
-    module_def_text = "module {:s} (\n".format(cap_dec_mod_name)
+    module_def_text = "/* verilator lint_off UNUSED */\n"
+    module_def_text += "module {:s} (\n".format(cap_dec_mod_name)
     module_def_text += "  input  {:s}::{:s} {:s},\n".format(pkg_name, cap_type_name, cap_in_signal_name)
     module_def_text += "  output {:s}::{:s} {:s}\n".format(pkg_name, cap_dec_type_name, cap_out_signal_name)
     module_def_text += ");\n"
@@ -175,6 +176,7 @@ class SystemVerilogGenerator(Generator):
       module_def_text += "  );\n"
 
     module_def_text += "endmodule\n"
+    module_def_text += "/* verilator lint_off UNUSED */\n"
 
     return [(pkg_file_name, pkg_def_text),
             (module_file_name, module_def_text)]
