@@ -227,7 +227,9 @@ module ibex_core import ibex_pkg::*; #(
   logic [31:0]              branch_target_int_ex;
   logic                     branch_decision;
   logic                     branch_is_cap;
+  /* verilator lint_off UNUSEDSIGNAL */
   logic [31:0]              if_pc_set_target;
+  /* verilator lint_on UNUSEDSIGNAL */
 
   // Core busy signals
   logic        ctrl_busy;
@@ -425,7 +427,9 @@ module ibex_core import ibex_pkg::*; #(
   logic        perf_dside_wait;
   logic        perf_mul_wait;
   logic        perf_div_wait;
+  /* verilator lint_off UNUSEDSIGNAL */
   logic        perf_xret;
+  /* verilator lint_on UNUSEDSIGNAL */
   logic        perf_jump;
   logic        perf_branch;
   logic        perf_tbranch;
