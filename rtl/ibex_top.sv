@@ -66,9 +66,9 @@ module ibex_top import ibex_pkg::*; #(
   output logic                         data_we_o,
   output logic [3:0]                   data_be_o,
   output logic [31:0]                  data_addr_o,
-  output logic [32:0]                  data_wdata_o,
+  output logic [31:0]                  data_wdata_o,
   output logic [6:0]                   data_wdata_intg_o,
-  input  logic [32:0]                  data_rdata_i,
+  input  logic [31:0]                  data_rdata_i,
   input  logic [6:0]                   data_rdata_intg_i,
   input  logic                         data_err_i,
 
@@ -251,7 +251,7 @@ module ibex_top import ibex_pkg::*; #(
 
   // ibex_core takes integrity and data bits together. Combine the separate integrity and data
   // inputs here.
-  assign data_rdata_core[MemDataWidth-1:0] = data_rdata_i;
+  assign data_rdata_core[MemDataWidth-1:0] = {1'b0, data_rdata_i};
   assign instr_rdata_core[31:0] = instr_rdata_i;
 
   if (MemECC) begin : gen_mem_rdata_ecc
@@ -666,7 +666,7 @@ module ibex_top import ibex_pkg::*; #(
 
   end
 
-  assign data_wdata_o = data_wdata_core[MemDataWidth-1:0];
+  assign data_wdata_o = data_wdata_core[MemDataWidth-1:0][31:0];
 
   if (MemECC) begin : gen_mem_wdata_ecc
     prim_buf #(.Width(7)) u_prim_buf_data_wdata_intg (
