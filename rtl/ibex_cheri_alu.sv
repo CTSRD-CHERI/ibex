@@ -53,8 +53,11 @@ module ibex_cheri_alu #(
   cheri_exc_t exceptions_b;
 
   // Operands a and b as integers (ie bottom IntWidth bits)
-  logic [IntWidth-1:0] operand_a_int = operand_a_i[IntWidth-1:0];
-  logic [IntWidth-1:0] operand_b_int = operand_b_i[IntWidth-1:0];
+  logic [IntWidth-1:0] operand_a_int;
+  assign operand_a_int = operand_a_i[IntWidth-1:0];
+
+  logic [IntWidth-1:0] operand_b_int;
+  assign operand_b_int = operand_b_i[IntWidth-1:0];
 
 
   // function input and output declarations
@@ -124,22 +127,32 @@ module ibex_cheri_alu #(
   // TODO interacting with the "Kind" and "Type" of a capability needs nasty
   // code atm. Should discuss with cheri-cap-lib what would be a cleaner way
   // to do this
-  logic [OTypeWidth-1:0] a_getOType_o = a_getKind_o[OTypeWidth-1:0];
-  logic [OTypeWidth-1:0] b_getOType_o = b_getKind_o[OTypeWidth-1:0];
+  logic [OTypeWidth-1:0] a_getOType_o;
+  assign a_getOType_o = a_getKind_o[OTypeWidth-1:0];
+  logic [OTypeWidth-1:0] b_getOType_o;
+  assign b_getOType_o = b_getKind_o[OTypeWidth-1:0];
 
-  logic a_isSealed_o = a_getKind_o[KindWidth-1:OTypeWidth] != 0;
-  logic b_isSealed_o = b_getKind_o[KindWidth-1:OTypeWidth] != 0;
+  logic a_isSealed_o;
+  assign a_isSealed_o = a_getKind_o[KindWidth-1:OTypeWidth] != 0;
+  logic b_isSealed_o;
+  assign b_isSealed_o = b_getKind_o[KindWidth-1:OTypeWidth] != 0;
 
-  logic a_isSentry_o = a_getKind_o[KindWidth-1:OTypeWidth] == 1;
-  logic b_isSentry_o = b_getKind_o[KindWidth-1:OTypeWidth] == 1;
+  logic a_isSentry_o;
+  assign a_isSentry_o = a_getKind_o[KindWidth-1:OTypeWidth] == 1;
+  logic b_isSentry_o;
+  assign b_isSentry_o = b_getKind_o[KindWidth-1:OTypeWidth] == 1;
 
-  logic a_isReserved_o = a_getKind_o[KindWidth-1:OTypeWidth] == 2
-                       | a_getKind_o[KindWidth-1:OTypeWidth] == 3;
-  logic b_isReserved_o = b_getKind_o[KindWidth-1:OTypeWidth] == 2
-                       | b_getKind_o[KindWidth-1:OTypeWidth] == 3;
+  logic a_isReserved_o;
+  assign a_isReserved_o = a_getKind_o[KindWidth-1:OTypeWidth] == 2
+                        | a_getKind_o[KindWidth-1:OTypeWidth] == 3;
+  logic b_isReserved_o;
+  assign b_isReserved_o = b_getKind_o[KindWidth-1:OTypeWidth] == 2
+                        | b_getKind_o[KindWidth-1:OTypeWidth] == 3;
 
-  logic a_isSealedWithType_o = a_getKind_o[KindWidth-1:OTypeWidth] == 4;
-  logic b_isSealedWithType_o = b_getKind_o[KindWidth-1:OTypeWidth] == 4;
+  logic a_isSealedWithType_o;
+  assign a_isSealedWithType_o = a_getKind_o[KindWidth-1:OTypeWidth] == 4;
+  logic b_isSealedWithType_o;
+  assign b_isSealedWithType_o = b_getKind_o[KindWidth-1:OTypeWidth] == 4;
 
   logic [IntWidth:0] a_getLength_o;
 
