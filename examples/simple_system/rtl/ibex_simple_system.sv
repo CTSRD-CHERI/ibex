@@ -79,6 +79,7 @@ module ibex_simple_system (
   logic           host_we     [NrHosts];
   logic [ 3:0]    host_be     [NrHosts];
   logic [31:0]    host_wdata  [NrHosts];
+  logic           unused_host_wdata_tag [NrHosts];
   logic           host_rvalid [NrHosts];
   logic [31:0]    host_rdata  [NrHosts];
   logic           host_err    [NrHosts];
@@ -232,9 +233,9 @@ module ibex_simple_system (
       .data_we_o              (host_we[CoreD]),
       .data_be_o              (host_be[CoreD]),
       .data_addr_o            (host_addr[CoreD]),
-      .data_wdata_o           (host_wdata[CoreD]),
+      .data_wdata_o           ({unused_host_wdata_tag[CoreD], host_wdata[CoreD]}),
       .data_wdata_intg_o      (),
-      .data_rdata_i           (host_rdata[CoreD]),
+      .data_rdata_i           ({1'b0, host_rdata[CoreD]}),
       .data_rdata_intg_i      (data_rdata_intg),
       .data_err_i             (host_err[CoreD]),
 

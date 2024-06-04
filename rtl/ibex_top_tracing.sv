@@ -58,9 +58,9 @@ module ibex_top_tracing import ibex_pkg::*; #(
   output logic                         data_we_o,
   output logic [3:0]                   data_be_o,
   output logic [31:0]                  data_addr_o,
-  output logic [31:0]                  data_wdata_o,
+  output logic [32:0]                  data_wdata_o,
   output logic [6:0]                   data_wdata_intg_o,
-  input  logic [31:0]                  data_rdata_i,
+  input  logic [32:0]                  data_rdata_i,
   input  logic [6:0]                   data_rdata_intg_i,
   input  logic                         data_err_i,
 
@@ -115,19 +115,29 @@ module ibex_top_tracing import ibex_pkg::*; #(
   logic [31:0] rvfi_pc_rdata;
   logic [31:0] rvfi_pc_wdata;
   logic [31:0] rvfi_mem_addr;
-  logic [ 3:0] rvfi_mem_rmask;
-  logic [ 3:0] rvfi_mem_wmask;
-  logic [31:0] rvfi_mem_rdata;
-  logic [31:0] rvfi_mem_wdata;
+  /* verilator lint_off UNUSED */
+  logic [ 7:0] rvfi_mem_rmask;
+  logic [ 7:0] rvfi_mem_wmask;
+  logic [63:0] rvfi_mem_rdata;
+  logic [63:0] rvfi_mem_wdata;
+  /* verilator lint_on UNUSED */
   logic [31:0] rvfi_ext_mip;
   logic        rvfi_ext_nmi;
   logic        rvfi_ext_debug_req;
   logic [63:0] rvfi_ext_mcycle;
+  logic        perf_xret_o;
+  logic        perf_jump_o;
+  logic        perf_tbranch_o;
+  logic        perf_if_cheri_err_o;
 
   logic [31:0] unused_rvfi_ext_mip;
   logic        unused_rvfi_ext_nmi;
   logic        unused_rvfi_ext_debug_req;
   logic [63:0] unused_rvfi_ext_mcycle;
+  logic        unused_perf_xret_o;
+  logic        unused_perf_jump_o;
+  logic        unused_perf_tbranch_o;
+  logic        unused_perf_if_cheri_err_o;
 
   // Tracer doesn't use these signals, though other modules may probe down into tracer to observe
   // them.
@@ -135,6 +145,10 @@ module ibex_top_tracing import ibex_pkg::*; #(
   assign unused_rvfi_ext_nmi = rvfi_ext_nmi;
   assign unused_rvfi_ext_debug_req = rvfi_ext_debug_req;
   assign unused_rvfi_ext_mcycle = rvfi_ext_mcycle;
+  assign unused_perf_xret_o = perf_xret_o;
+  assign unused_perf_jump_o = perf_jump_o;
+  assign unused_perf_tbranch_o = perf_tbranch_o;
+  assign unused_perf_if_cheri_err_o = perf_if_cheri_err_o;
 
   ibex_top #(
     .PMPEnable        ( PMPEnable        ),
@@ -232,6 +246,10 @@ module ibex_top_tracing import ibex_pkg::*; #(
     .rvfi_ext_nmi,
     .rvfi_ext_debug_req,
     .rvfi_ext_mcycle,
+    .perf_xret_o,
+    .perf_jump_o,
+    .perf_tbranch_o,
+    .perf_if_cheri_err_o,
 
     .fetch_enable_i,
     .alert_minor_o,
@@ -266,10 +284,10 @@ module ibex_top_tracing import ibex_pkg::*; #(
     .rvfi_pc_rdata,
     .rvfi_pc_wdata,
     .rvfi_mem_addr,
-    .rvfi_mem_rmask,
-    .rvfi_mem_wmask,
-    .rvfi_mem_rdata,
-    .rvfi_mem_wdata
+    .rvfi_mem_rmask(rvfi_mem_rmask[3:0]),
+    .rvfi_mem_wmask(rvfi_mem_wmask[3:0]),
+    .rvfi_mem_rdata(rvfi_mem_rdata[31:0]),
+    .rvfi_mem_wdata(rvfi_mem_wdata[31:0])
   );
 
 endmodule

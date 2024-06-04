@@ -90,8 +90,10 @@ module ibex_decoder #(
   // whether we're in capability mode or not
   input logic                             cap_mode_i,
 
+  /* verilator lint_off UNUSED */
   // current privilege mode
   input ibex_pkg::priv_lvl_e              priv_mode_i,
+  /* verilator lint_on UNUSED */
 
   // whether the offset for this memory access should be relative to the
   // capability base or the capability address

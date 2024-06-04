@@ -81,7 +81,9 @@ module ibex_tracer (
 
   import ibex_tracer_pkg::*;
 
+  /* verilator lint_off UNDRIVEN */
   int          file_handle;
+  /* verilator lint_on UNDRIVEN */
   string       file_name;
 
   int unsigned cycle;
@@ -114,9 +116,11 @@ module ibex_tracer (
       string file_name_base = "trace_core";
       void'($value$plusargs("ibex_tracer_file_base=%s", file_name_base));
       $sformat(file_name, "%s_%h.log", file_name_base, hart_id_i);
+      /* verilator lint_off BLKSEQ */
+      file_handle = $fopen(file_name, "w");
+      /* verilator lint_on BLKSEQ */
 
       $display("%m: Writing execution trace to %s", file_name);
-      file_handle = $fopen(file_name, "w");
       $fwrite(file_handle,
               "Time\tCycle\tPC\tInsn\tDecoded instruction\tRegister and memory contents\n");
     end
@@ -759,9 +763,11 @@ module ibex_tracer (
   end
 
   always_comb begin
+    /* verilator lint_off MULTIDRIVEN */
     decoded_str = "";
     data_accessed = 5'h0;
     insn_is_compressed = 0;
+    /* verilator lint_off MULTIDRIVEN */
 
     // Check for compressed instructions
     if (rvfi_insn[1:0] != 2'b11) begin

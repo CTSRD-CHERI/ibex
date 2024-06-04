@@ -227,7 +227,9 @@ module ibex_core import ibex_pkg::*; #(
   logic [31:0]              branch_target_int_ex;
   logic                     branch_decision;
   logic                     branch_is_cap;
+  /* verilator lint_off UNUSEDSIGNAL */
   logic [31:0]              if_pc_set_target;
+  /* verilator lint_on UNUSEDSIGNAL */
 
   // Core busy signals
   logic        ctrl_busy;
@@ -250,7 +252,7 @@ module ibex_core import ibex_pkg::*; #(
   // read data as this is too late for the forwarding path)
   logic [CheriCapWidth-1:0] rf_wdata_cap_fwd_wb;
   logic [31:0]              rf_wdata_int_fwd_wb;
-  logic                     rf_wcap_fwd_wb;
+  //logic                     rf_wcap_fwd_wb;
   logic [CheriCapWidth-1:0] rf_wdata_cap_lsu;
   logic [31:0]              rf_wdata_int_lsu;
   logic                     rf_wcap_lsu;
@@ -352,7 +354,9 @@ module ibex_core import ibex_pkg::*; #(
   logic [CheriCapWidth-1:0] lsu_mem_auth_cap;
   logic [31:0]              lsu_auth_addr;
   logic                     lsu_add_auth_addr;
+  /* verilator lint_off UNUSED */
   logic                     lsu_data_first_access;
+  /* verilator lint_on UNUSED */
 
   // stall control
   logic        id_in_ready;
@@ -423,7 +427,9 @@ module ibex_core import ibex_pkg::*; #(
   logic        perf_dside_wait;
   logic        perf_mul_wait;
   logic        perf_div_wait;
+  /* verilator lint_off UNUSEDSIGNAL */
   logic        perf_xret;
+  /* verilator lint_on UNUSEDSIGNAL */
   logic        perf_jump;
   logic        perf_branch;
   logic        perf_tbranch;
@@ -780,7 +786,7 @@ module ibex_core import ibex_pkg::*; #(
     .rf_waddr_wb_i        (rf_waddr_wb),
     .rf_wdata_cap_fwd_wb_i(rf_wdata_cap_fwd_wb),
     .rf_wdata_int_fwd_wb_i(rf_wdata_int_fwd_wb),
-    .rf_wcap_fwd_wb_i     (rf_wcap_fwd_wb),
+    //.rf_wcap_fwd_wb_i     (rf_wcap_fwd_wb),
     .rf_write_wb_i        (rf_write_wb),
 
     .en_wb_o               (en_wb),
@@ -973,7 +979,7 @@ module ibex_core import ibex_pkg::*; #(
 
     .rf_wdata_cap_fwd_wb_o(rf_wdata_cap_fwd_wb),
     .rf_wdata_int_fwd_wb_o(rf_wdata_int_fwd_wb),
-    .rf_wcap_fwd_wb_o     (rf_wcap_fwd_wb),
+    //.rf_wcap_fwd_wb_o     (rf_wcap_fwd_wb),
 
     .rf_waddr_wb_o    (rf_waddr_wb),
     .rf_wdata_cap_wb_o(rf_wdata_cap_wb),
@@ -1735,6 +1741,9 @@ module ibex_core import ibex_pkg::*; #(
   // CHERI module instantiations to convert the capabilities read/written by
   // the LSU to their in-memory representation for RVFI
   logic [64:0] lsu_rdata_mem_cap, lsu_wdata_mem_cap;
+  logic unused_lsu_rdata_mem_cap_tag, unused_lsu_wdata_mem_cap_tag;
+  assign unused_lsu_rdata_mem_cap_tag = lsu_rdata_mem_cap[64];
+  assign unused_lsu_wdata_mem_cap_tag = lsu_wdata_mem_cap[64];
   module_wrap64_toMem wdata_toMem(lsu_wdata_cap, lsu_wdata_mem_cap);
   module_wrap64_toMem rdata_toMem(rf_wdata_cap_lsu, lsu_rdata_mem_cap);
 

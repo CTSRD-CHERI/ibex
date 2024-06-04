@@ -10,11 +10,13 @@ module ibex_cheri_memchecker #(
     input logic [CheriCapWidth-1:0] auth_cap_i,
 
     // data access information
+    /* verilator lint_off UNUSED */
     input logic [31:0] data_addr_i,
     input logic        data_we_i,
     input logic [1:0]  data_type_i,
     input logic [3:0]  data_be_i,
     input logic        data_cap_i,
+    /* verilator lint_on UNUSED */
 
     // exceptions that have been caused
     output ibex_pkg::cheri_exc_t cheri_mem_exc_o,
@@ -30,7 +32,6 @@ module ibex_cheri_memchecker #(
   import ibex_pkg::*;
 
   // CHERI module inputs & outputs
-  logic [31:0]                auth_cap_getAddr_o;
   logic                       auth_cap_isValidCap_o;
   logic                       auth_cap_isSealed_o;
   logic [31:0]                auth_cap_getBase_o;
@@ -45,12 +46,14 @@ module ibex_cheri_memchecker #(
   // it to the correct size (33 bits since capability "top" is 33 bits)
   logic [3:0]  data_size;
   logic [31:0] data_size_ext;
-  if (DataMem) begin
+  if (DataMem) begin : gen_data_size_data
     assign data_size = data_type_i == 2'b00 ? 4'h4 : // Word
                        data_type_i == 2'b01 ? 4'h2 : // Halfword
                        data_type_i == 2'b10 ? 4'h1 : // Byte
                                               4'h8;  // Double
-  end else begin
+  end else begin : gen_data_size_insn
+    logic [1:0] unused_data_type_i;
+    assign unused_data_type_i = data_type_i;
     assign data_size = 4'h2; // instruction accesses are 2 bytes
   end
   assign data_size_ext = {28'h0, data_size};
@@ -60,14 +63,14 @@ module ibex_cheri_memchecker #(
   logic [31:0] data_addr_actual, data_addr_actual_upper;;
   assign data_addr_actual[31:2]       = data_addr_i[31:2];
   assign data_addr_actual_upper[31:2] = data_addr_i[31:2];
-  if (DataMem) begin
+  if (DataMem) begin : gen_data_addr_data
     // for data memory, check byte enables to get the real address
     assign data_addr_actual[1:0]  = data_be_i[0] == 1'b1 ? 2'b00
                                   : data_be_i[1] == 1'b1 ? 2'b01
                                   : data_be_i[2] == 1'b1 ? 2'b10
                                   : 2'b11;
     assign data_addr_actual_upper[1:0] = 2'bX;
-  end else begin
+  end else begin : gen_data_addr_insn
     // for instructions, bottom bit is always 0 and need to check 2 accesses
     // (in case we read a compressed instruction)
     assign data_addr_actual[1:0]       = 2'b00;
@@ -103,7 +106,9 @@ module ibex_cheri_memchecker #(
     .wrap64_isValidCap    (auth_cap_isValidCap_o)
   );
 
+  /* verilator lint_off UNUSED */
   logic [CheriKindWidth-1:0] auth_cap_getKind_o;
+  /* verilator lint_on UNUSED */
   module_wrap64_getKind auth_cap_getKind(
     .wrap64_getKind_cap(auth_cap_i),
     .wrap64_getKind    (auth_cap_getKind_o)

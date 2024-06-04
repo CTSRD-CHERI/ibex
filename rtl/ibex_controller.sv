@@ -72,8 +72,10 @@ module ibex_controller #(
   input  logic                  cheri_alu_exc_only_i,
   input  ibex_pkg::cheri_exc_t  cheri_exceptions_a_ex_i,
   input  ibex_pkg::cheri_exc_t  cheri_exceptions_b_ex_i,
+  /* verilator lint_off UNUSED */
   input  ibex_pkg::cheri_exc_t  cheri_exceptions_lsu_i,
   input  ibex_pkg::cheri_exc_t  cheri_exceptions_if_i,
+  /* verilator lint_on UNUSED */
   input  logic                  scr_no_asr_i,
   input  logic                  csr_no_asr_i,
   input  logic                  mret_no_asr_i,
