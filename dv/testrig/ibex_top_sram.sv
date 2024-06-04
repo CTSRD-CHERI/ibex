@@ -64,9 +64,9 @@ module ibex_top_sram import ibex_pkg::*; #(
   output logic                         data_we_o,
   output logic [3:0]                   data_be_o,
   output logic [31:0]                  data_addr_o,
-  output logic [32:0]                  data_wdata_o,
+  output logic [31:0]                  data_wdata_o,
   output logic [6:0]                   data_wdata_intg_o,
-  input  logic [32:0]                  data_rdata_i,
+  input  logic [31:0]                  data_rdata_i,
   input  logic [6:0]                   data_rdata_intg_i,
   input  logic                         data_err_i,
 
