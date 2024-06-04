@@ -175,6 +175,16 @@ module ibex_top import ibex_pkg::*; #(
   logic [RegFileDataWidth-1:0] rf_rdata_a_ecc, rf_rdata_a_ecc_buf;
   logic [RegFileDataWidth-1:0] rf_rdata_b_ecc, rf_rdata_b_ecc_buf;
 
+  logic        data_req_core;
+  logic        data_gnt_core;
+  logic        data_rvalid_core;
+  logic        data_we_core;
+  logic [3:0]  data_be_core;
+  logic [31:0] data_addr_core;
+  logic [6:0]  data_wdata_intg_core;
+  logic [6:0]  data_rdata_intg_core;
+  logic        data_err_core;
+
   // Combined data and integrity for data and instruction busses
   logic [MemDataWidth-1:0]     data_wdata_core;
   logic [MemDataWidth-1:0]     data_rdata_core;
@@ -226,6 +236,37 @@ module ibex_top import ibex_pkg::*; #(
     .clk_o    (clk)
   );
 
+  //////////////////////////////////
+  // Tag controller instantiation //
+  //////////////////////////////////
+
+  tag_controller u_tag_controller (
+    .clk_i(clk),
+    .rst_ni,
+    .core_req_i(data_req_core),
+    .core_gnt_o(data_gnt_core),
+    .core_rvalid_o(data_rvalid_core),
+    .core_we_i(data_we_core),
+    .core_be_i(data_be_core),
+    .core_addr_i(data_addr_core),
+    .core_wdata_i(data_wdata_core),
+    .core_wdata_intg_i(data_wdata_intg_core),
+    .core_rdata_o(data_rdata_core),
+    .core_rdata_intg_o(data_rdata_intg_core),
+    .core_err_o(data_err_core),
+    .mem_req_o(data_req_o),
+    .mem_gnt_i(data_gnt_i),
+    .mem_rvalid_i(data_rvalid_i),
+    .mem_we_o(data_we_o),
+    .mem_be_o(data_be_o),
+    .mem_addr_o(data_addr_o),
+    .mem_wdata_o(data_wdata_o),
+    .mem_wdata_intg_o(data_wdata_intg_o),
+    .mem_rdata_i(data_rdata_i),
+    .mem_rdata_intg_i(data_rdata_intg_i),
+    .mem_err_i(data_err_i)
+  );
+
   ////////////////////////
   // Core instantiation //
   ////////////////////////
@@ -253,12 +294,12 @@ module ibex_top import ibex_pkg::*; #(
   assign instr_rdata_core[31:0] = instr_rdata_i;
 
   if (MemECC) begin : gen_mem_rdata_ecc
-    assign data_rdata_core[38:32] = data_rdata_intg_i;
+    assign data_rdata_core[38:32] = data_rdata_intg_core;
     assign instr_rdata_core[38:32] = instr_rdata_intg_i;
   end else begin : gen_non_mem_rdata_ecc
     logic unused_intg;
 
-    assign unused_intg = ^{instr_rdata_intg_i, data_rdata_intg_i};
+    assign unused_intg = ^{instr_rdata_intg_i, data_rdata_intg_core};
   end
 
   ibex_core #(
@@ -309,15 +350,15 @@ module ibex_top import ibex_pkg::*; #(
     .instr_rdata_i(instr_rdata_core),
     .instr_err_i,
 
-    .data_req_o,
-    .data_gnt_i,
-    .data_rvalid_i,
-    .data_we_o,
-    .data_be_o,
-    .data_addr_o,
+    .data_req_o(data_req_core),
+    .data_gnt_i(data_gnt_core),
+    .data_rvalid_i(data_rvalid_core),
+    .data_we_o(data_we_core),
+    .data_be_o(data_be_core),
+    .data_addr_o(data_addr_core),
+    .data_err_i(data_err_core),
     .data_wdata_o(data_wdata_core),
     .data_rdata_i(data_rdata_core),
-    .data_err_i,
 
     .dummy_instr_id_o (dummy_instr_id),
     .rf_raddr_a_o     (rf_raddr_a),
@@ -671,10 +712,10 @@ module ibex_top import ibex_pkg::*; #(
   if (MemECC) begin : gen_mem_wdata_ecc
     prim_buf #(.Width(7)) u_prim_buf_data_wdata_intg (
       .in_i (data_wdata_core[38:32]),
-      .out_o(data_wdata_intg_o)
+      .out_o(data_wdata_intg_core)
     );
   end else begin : gen_no_mem_ecc
-    assign data_wdata_intg_o = '0;
+    assign data_wdata_intg_core = '0;
   end
 
   // Redundant lockstep core implementation

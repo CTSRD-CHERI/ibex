@@ -15,12 +15,14 @@ filesets:
       - lowrisc:prim:flop
       - lowrisc:prim:ram_1p_scr
       - lowrisc:prim:onehot_check
+      - lowrisc:prim:fifo
     files:
       - rtl/ibex_register_file_ff.sv # generic FF-based
       - rtl/ibex_register_file_fpga.sv # FPGA
       - rtl/ibex_register_file_latch.sv # ASIC
       - rtl/ibex_lockstep.sv
       - rtl/ibex_top.sv
+      - rtl/tag_controller.sv
     file_type: systemVerilogSource
 
   files_lint_verilator:
