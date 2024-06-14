@@ -192,6 +192,8 @@ module ibex_cheri_alu #(
   logic [IntWidth-1:0] a_getRepLen_i;
   logic [IntWidth-1:0] a_getRepLen_o;
 
+  logic [IntWidth+IntWidth+1-1:0] a_toMem_o;
+
   logic [IntWidth:0] cmp_gt_a_i, cmp_gt_b_i;
   logic cmp_gt_res_o;
   assign cmp_gt_res_o = $unsigned(cmp_gt_a_i) > $unsigned(cmp_gt_b_i);
@@ -661,6 +663,15 @@ module ibex_cheri_alu #(
                   end
                 end
 
+                C_GET_HIGH: begin
+                  result_o[IntWidth-1:0]  = a_toMem_o[IntWidth+IntWidth-1:IntWidth];
+                  wrote_capability        = 1'b0;
+
+                  if (Verbosity) begin
+                    $display("cgethigh output: %h   exceptions: %h   exceptions_b: %h", result_o, exceptions_a_o, exceptions_b_o);
+                  end
+                end
+
                 C_MOVE: begin
                   result_o         = operand_a_i;
                   wrote_capability = 1'b1;
@@ -991,6 +1002,10 @@ module_wrap64_getRepresentableLength module_getRepresentableLength_a (
       .wrap64_getRepresentableLength_dummy  (operand_a_i),
       .wrap64_getRepresentableLength_length (a_getRepLen_i),
       .wrap64_getRepresentableLength        (a_getRepLen_o));
+
+module_wrap64_toMem module_toMem_a (
+      .wrap64_toMem_cap (operand_a_i),
+      .wrap64_toMem     (a_toMem_o));
 
 
 

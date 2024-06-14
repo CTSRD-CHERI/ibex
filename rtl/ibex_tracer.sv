@@ -1068,6 +1068,7 @@ module ibex_tracer (
         INSN_CGETSEALED:      decode_cheri_int_from_cap("cgetsealed");
         INSN_CGETOFFSET:      decode_cheri_int_from_cap("cgetoffset");
         INSN_CGETFLAGS:       decode_cheri_int_from_cap("cgetflags");
+        INSN_CGETHIGH:        decode_cheri_int_from_cap("cgethigh");
         INSN_CGETTOP:         decode_cheri_int_from_cap("cgettop");
         INSN_CROUNDREPLEN:    decode_r1_insn("crrl");
         INSN_CROUNDALIGNMASK: decode_r1_insn("cram");
