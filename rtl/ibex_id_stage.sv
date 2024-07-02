@@ -218,7 +218,7 @@ module ibex_id_stage #(
   input  logic [4:0]                rf_waddr_wb_i,
   input  logic [CheriCapWidth-1:0]  rf_wdata_cap_fwd_wb_i,
   input  logic [31:0]               rf_wdata_int_fwd_wb_i,
-  //input  logic                      rf_wcap_fwd_wb_i,
+  input  logic                      rf_wcap_fwd_wb_i,
   input  logic                      rf_write_wb_i,
 
   output  logic                     en_wb_o,
@@ -1176,10 +1176,21 @@ module ibex_id_stage #(
     // If instruction is read register that writeback is writing forward writeback data to read
     // data. Note this doesn't factor in load data as it arrives too late, such hazards are
     // resolved via a stall (see above).
-    assign rf_rdata_a_cap_fwd = rf_rd_a_wb_match & rf_write_wb_i ? rf_wdata_cap_fwd_wb_i : rf_rdata_a_cap_i;
-    assign rf_rdata_a_int_fwd = rf_rd_a_wb_match & rf_write_wb_i ? rf_wdata_int_fwd_wb_i : rf_rdata_a_int_i;
-    assign rf_rdata_b_cap_fwd = rf_rd_b_wb_match & rf_write_wb_i ? rf_wdata_cap_fwd_wb_i : rf_rdata_b_cap_i;
-    assign rf_rdata_b_int_fwd = rf_rd_b_wb_match & rf_write_wb_i ? rf_wdata_int_fwd_wb_i : rf_rdata_b_int_i;
+
+    // Extend the forwarded integer with null metadata
+    logic [CheriCapWidth-1:0] rf_wdata_int_fwd_wb_extended;
+    module_wrap64_nullWithAddr rf_wdata_cap_from_int(rf_wdata_int_fwd_wb_i, rf_wdata_int_fwd_wb_extended);
+
+    // Mux between the integer and capability forwarding from wb stage
+    logic [CheriCapWidth-1:0] rf_wdata_cap_or_int_fwd_wb;
+    assign rf_wdata_cap_or_int_fwd_wb = rf_wcap_fwd_wb_i ? rf_wdata_cap_fwd_wb_i : rf_wdata_int_fwd_wb_extended;
+    logic [31:0] rf_wdata_cap_or_int_fwd_wb_addr;
+    module_wrap64_getAddr rf_wdata_int_from_cap(rf_wdata_cap_or_int_fwd_wb, rf_wdata_cap_or_int_fwd_wb_addr);
+
+    assign rf_rdata_a_cap_fwd = rf_rd_a_wb_match & rf_write_wb_i ? rf_wdata_cap_or_int_fwd_wb      : rf_rdata_a_cap_i;
+    assign rf_rdata_a_int_fwd = rf_rd_a_wb_match & rf_write_wb_i ? rf_wdata_cap_or_int_fwd_wb_addr : rf_rdata_a_int_i;
+    assign rf_rdata_b_cap_fwd = rf_rd_b_wb_match & rf_write_wb_i ? rf_wdata_cap_or_int_fwd_wb      : rf_rdata_b_cap_i;
+    assign rf_rdata_b_int_fwd = rf_rd_b_wb_match & rf_write_wb_i ? rf_wdata_cap_or_int_fwd_wb_addr : rf_rdata_b_int_i;
 
     assign stall_ld_hz = outstanding_load_wb_i & (rf_rd_a_hz | rf_rd_b_hz);
 
@@ -1244,6 +1255,7 @@ module ibex_id_stage #(
     logic unused_wb_exception;
     logic [CheriCapWidth-1:0] unused_rf_wdata_cap_fwd_wb;
     logic [31:0]              unused_rf_wdata_int_fwd_wb;
+    logic                     unused_rf_wcap_fwd_wb;
     logic unused_id_exception;
 
     assign unused_data_req_done_ex     = lsu_req_done_i;
@@ -1254,6 +1266,7 @@ module ibex_id_stage #(
     assign unused_wb_exception         = wb_exception;
     assign unused_rf_wdata_cap_fwd_wb      = rf_wdata_cap_fwd_wb_i;
     assign unused_rf_wdata_int_fwd_wb      = rf_wdata_int_fwd_wb_i;
+    assign unused_rf_wcap_fwd_wb           = rf_wcap_fwd_wb_i;
     assign unused_id_exception         = id_exception;
 
     assign instr_type_wb_o = WB_INSTR_OTHER;

@@ -256,7 +256,7 @@ module ibex_core import ibex_pkg::*; #(
   // read data as this is too late for the forwarding path)
   logic [CheriCapWidth-1:0] rf_wdata_cap_fwd_wb;
   logic [31:0]              rf_wdata_int_fwd_wb;
-  //logic                     rf_wcap_fwd_wb;
+  logic                     rf_wcap_fwd_wb;
   logic [CheriCapWidth-1:0] rf_wdata_cap_lsu;
   logic [31:0]              rf_wdata_int_lsu;
   logic                     rf_wcap_lsu;
@@ -794,7 +794,7 @@ module ibex_core import ibex_pkg::*; #(
     .rf_waddr_wb_i        (rf_waddr_wb),
     .rf_wdata_cap_fwd_wb_i(rf_wdata_cap_fwd_wb),
     .rf_wdata_int_fwd_wb_i(rf_wdata_int_fwd_wb),
-    //.rf_wcap_fwd_wb_i     (rf_wcap_fwd_wb),
+    .rf_wcap_fwd_wb_i     (rf_wcap_fwd_wb),
     .rf_write_wb_i        (rf_write_wb),
 
     .en_wb_o               (en_wb),
@@ -987,7 +987,7 @@ module ibex_core import ibex_pkg::*; #(
 
     .rf_wdata_cap_fwd_wb_o(rf_wdata_cap_fwd_wb),
     .rf_wdata_int_fwd_wb_o(rf_wdata_int_fwd_wb),
-    //.rf_wcap_fwd_wb_o     (rf_wcap_fwd_wb),
+    .rf_wcap_fwd_wb_o     (rf_wcap_fwd_wb),
 
     .rf_waddr_wb_o    (rf_waddr_wb),
     .rf_wdata_cap_wb_o(rf_wdata_cap_wb),
