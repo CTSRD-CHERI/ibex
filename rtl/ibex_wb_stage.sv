@@ -54,7 +54,7 @@ module ibex_wb_stage #(
 
   output logic [CheriCapWidth-1:0] rf_wdata_cap_fwd_wb_o,
   output logic [31:0]              rf_wdata_int_fwd_wb_o,
-  //output logic                     rf_wcap_fwd_wb_o,
+  output logic                     rf_wcap_fwd_wb_o,
 
   output logic [4:0]               rf_waddr_wb_o,
   output logic [CheriCapWidth-1:0] rf_wdata_cap_wb_o,
@@ -189,6 +189,7 @@ module ibex_wb_stage #(
     // that returns too late to be used on the forwarding path.
     assign rf_wdata_cap_fwd_wb_o = rf_wdata_cap_wb_q;
     assign rf_wdata_int_fwd_wb_o = rf_wdata_int_wb_q;
+    assign rf_wcap_fwd_wb_o      = rf_wcap_wb_q;
   end else begin : g_bypass_wb
     // without writeback stage just pass through register write signals
     assign rf_waddr_wb_o           = rf_waddr_id_i;
