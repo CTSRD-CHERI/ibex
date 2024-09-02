@@ -725,8 +725,11 @@ module ibex_decoder #(
         unique case (cheri_base_opcode)
           C_SET_BOUNDS_IMM, C_INC_OFFSET_IMM: begin
             rf_we = 1'b1;
+            rf_ren_a_o = 1'b1;
           end
           THREE_OP: begin
+            rf_ren_a_o = 1'b1;
+            rf_ren_b_o = 1'b1;
             unique case (cheri_threeop_opcode)
               C_SET_BOUNDS, C_SET_BOUNDS_EXACT, C_AND_PERM, C_SET_FLAGS, C_SET_OFFSET, C_SET_ADDR, C_INC_OFFSET: begin
                 rf_we = 1'b1;

@@ -300,6 +300,94 @@ package ibex_tracer_pkg;
   parameter logic [31:0] INSN_FENCE   = { 17'h?,             3'b000, 5'h?, {OPCODE_MISC_MEM} };
   parameter logic [31:0] INSN_FENCEI  = { 17'h0,             3'b001, 5'h0, {OPCODE_MISC_MEM} };
 
+  // CHERI
+  // I-types
+  parameter logic [31:0] INSN_CSETBOUNDSIMM =
+      {17'h?, 3'b010, 5'h?, {OPCODE_CHERI}};
+  parameter logic [31:0] INSN_CINCOFFSETIMM =
+      {17'h?, 3'b001, 5'h?, {OPCODE_CHERI}};
+
+  // Reg, Reg, Dst
+  parameter logic [31:0] INSN_CSPECIALRW =
+      {7'b0000001, 10'h?, 3'b000, 5'h?, {OPCODE_CHERI}};
+  parameter logic [31:0] INSN_CSETBOUNDS =
+      {7'b0001000, 10'h?, 3'b000, 5'h?, {OPCODE_CHERI}};
+  parameter logic [31:0] INSN_CSETBOUNDSEXACT =
+      {7'b0001001, 10'h?, 3'b000, 5'h?, {OPCODE_CHERI}};
+  parameter logic [31:0] INSN_CUNSEAL =
+      {7'b0001100, 10'h?, 3'b000, 5'h?, {OPCODE_CHERI}};
+  parameter logic [31:0] INSN_CSEAL =
+      {7'b0001011, 10'h?, 3'b000, 5'h?, {OPCODE_CHERI}};
+  parameter logic [31:0] INSN_CCSEAL =
+      {7'b0011111, 10'h?, 3'b000, 5'h?, {OPCODE_CHERI}};
+  parameter logic [31:0] INSN_CANDPERM =
+      {7'b0001101, 10'h?, 3'b000, 5'h?, {OPCODE_CHERI}};
+  parameter logic [31:0] INSN_CSETFLAGS =
+      {7'b0001110, 10'h?, 3'b000, 5'h?, {OPCODE_CHERI}};
+  parameter logic [31:0] INSN_CSETOFFSET =
+      {7'b0001111, 10'h?, 3'b000, 5'h?, {OPCODE_CHERI}};
+  parameter logic [31:0] INSN_CSETADDR =
+      {7'b0010000, 10'h?, 3'b000, 5'h?, {OPCODE_CHERI}};
+  parameter logic [31:0] INSN_CINCOFFSET =
+      {7'b0010001, 10'h?, 3'b000, 5'h?, {OPCODE_CHERI}};
+  parameter logic [31:0] INSN_CTOPTR =
+      {7'b0010010, 10'h?, 3'b000, 5'h?, {OPCODE_CHERI}};
+  parameter logic [31:0] INSN_CFROMPTR =
+      {7'b0010011, 10'h?, 3'b000, 5'h?, {OPCODE_CHERI}};
+  parameter logic [31:0] INSN_CAPSUB =
+      {7'b0010100, 10'h?, 3'b000, 5'h?, {OPCODE_CHERI}};
+  parameter logic [31:0] INSN_CBUILDCAP =
+      {7'b0011101, 10'h?, 3'b000, 5'h?, {OPCODE_CHERI}};
+  parameter logic [31:0] INSN_CCOPYTYPE =
+      {7'b0011110, 10'h?, 3'b000, 5'h?, {OPCODE_CHERI}};
+  parameter logic [31:0] INSN_CTESTSUBSET =
+      {7'b0100000, 10'h?, 3'b000, 5'h?, {OPCODE_CHERI}};
+
+  // Reg, Dst
+  parameter logic [31:0] INSN_CGETPERM =
+      {7'b1111111, 5'b00000, 5'h?, 3'b000, 5'h?, {OPCODE_CHERI}};
+  parameter logic [31:0] INSN_CGETTYPE =
+      {7'b1111111, 5'b00001, 5'h?, 3'b000, 5'h?, {OPCODE_CHERI}};
+  parameter logic [31:0] INSN_CGETBASE =
+      {7'b1111111, 5'b00010, 5'h?, 3'b000, 5'h?, {OPCODE_CHERI}};
+  parameter logic [31:0] INSN_CGETLEN =
+      {7'b1111111, 5'b00011, 5'h?, 3'b000, 5'h?, {OPCODE_CHERI}};
+  parameter logic [31:0] INSN_CGETTAG =
+      {7'b1111111, 5'b00100, 5'h?, 3'b000, 5'h?, {OPCODE_CHERI}};
+  parameter logic [31:0] INSN_CGETSEALED =
+      {7'b1111111, 5'b00101, 5'h?, 3'b000, 5'h?, {OPCODE_CHERI}};
+  parameter logic [31:0] INSN_CGETOFFSET =
+      {7'b1111111, 5'b00110, 5'h?, 3'b000, 5'h?, {OPCODE_CHERI}};
+  parameter logic [31:0] INSN_CGETFLAGS =
+      {7'b1111111, 5'b00111, 5'h?, 3'b000, 5'h?, {OPCODE_CHERI}};
+  parameter logic [31:0] INSN_CROUNDREPLEN =
+      {7'b1111111, 5'b01000, 5'h?, 3'b000, 5'h?, {OPCODE_CHERI}};
+  parameter logic [31:0] INSN_CROUNDALIGNMASK =
+      {7'b1111111, 5'b01001, 5'h?, 3'b000, 5'h?, {OPCODE_CHERI}};
+  parameter logic [31:0] INSN_CMOVE =
+      {7'b1111111, 5'b01010, 5'h?, 3'b000, 5'h?, {OPCODE_CHERI}};
+  parameter logic [31:0] INSN_CCLEARTAG =
+      {7'b1111111, 5'b01011, 5'h?, 3'b000, 5'h?, {OPCODE_CHERI}};
+  parameter logic [31:0] INSN_CAPJALR =
+      {7'b1111111, 5'b01100, 5'h?, 3'b000, 5'h?, {OPCODE_CHERI}};
+  parameter logic [31:0] INSN_CLEAR =
+      {7'b1111111, 5'b01101, 5'h?, 3'b000, 5'h?, {OPCODE_CHERI}};
+  parameter logic [31:0] INSN_CGETADDR =
+      {7'b1111111, 5'b01111, 5'h?, 3'b000, 5'h?, {OPCODE_CHERI}};
+  parameter logic [31:0] INSN_CSEALENTRY =
+      {7'b1111111, 5'b10001, 5'h?, 3'b000, 5'h?, {OPCODE_CHERI}};
+
+  // Reg, Reg (no Dst)
+  parameter logic [31:0] INSN_CINVOKE =
+      {7'b1111110, 10'h?, 3'b000, 5'b00001, {OPCODE_CHERI}};
+
+  // Fixed-mode memory access
+  parameter logic [31:0] INSN_CSTORE =
+      {7'b1111100, 10'h?, 3'b000, 5'h?, {OPCODE_CHERI}};
+  parameter logic [31:0] INSN_CLOAD =
+      {7'b1111101, 10'h?, 3'b000, 5'h?, {OPCODE_CHERI}};
+
+
   // Compressed Instructions
   // C0
   parameter logic [15:0] INSN_CADDI4SPN  = { 3'b000,       11'h?,                    {OPCODE_C0} };
