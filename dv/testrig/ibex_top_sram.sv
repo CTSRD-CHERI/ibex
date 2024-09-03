@@ -56,6 +56,8 @@ module ibex_top_sram import ibex_pkg::*; #(
   input  logic [6:0]                   instr_rdata_intg_i,
   input  logic                         instr_err_i,
 
+  output logic [1:0]                   instr_addr_lo_o,
+
   // Data memory interface
   // Data will be provided by the simulation environment
   output logic                         data_req_o,
@@ -179,6 +181,8 @@ module ibex_top_sram import ibex_pkg::*; #(
     .instr_rdata_i(instr_rdata_i[31:0]),
     .instr_rdata_intg_i,
     .instr_err_i,
+
+    .instr_addr_lo_o,
 
     // This is connected to the bus
     .data_req_o,

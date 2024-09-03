@@ -48,6 +48,10 @@ module ibex_if_stage import ibex_pkg::*; #(
   input  logic                        instr_bus_err_i,
   output logic                        instr_intg_err_o,
 
+`ifdef DII
+  output logic [1:0]                  instr_addr_lo_o,
+`endif
+
   // CHERI exceptions
   /* verilator lint_off UNUSED */
   input ibex_pkg::cheri_exc_t         instr_cheri_exc_i,
@@ -469,8 +473,7 @@ module ibex_if_stage import ibex_pkg::*; #(
   end else begin : gen_prefetch_buffer
     // prefetch buffer, caches a fixed number of instructions
     ibex_prefetch_buffer #(
-      .ResetAll        (ResetAll),
-      .TestRIG         (TestRIG)
+      .ResetAll        (ResetAll)
     ) prefetch_buffer_i (
         .clk_i               ( clk_i                      ),
         .rst_ni              ( rst_ni                     ),
@@ -500,6 +503,10 @@ module ibex_if_stage import ibex_pkg::*; #(
         .instr_cheri_lower_err_i   ( instr_lower_exc      ),
         .instr_cheri_upper_err_i   ( instr_upper_exc_i    ),
         .instr_cheri_upper_err_2_i ( instr_upper_exc_2_i  ),
+
+`ifdef DII
+        .instr_addr_lo_o     ( instr_addr_lo_o            ),
+`endif
 
 `ifdef RVFI
         .perf_if_cheri_err_o ( perf_if_cheri_err_o        ),

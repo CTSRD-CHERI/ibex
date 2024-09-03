@@ -63,6 +63,167 @@ double sc_time_stamp() {
 const uint64_t memory_base = 0x80000000;
 const uint64_t memory_size =   0x800000;
 
+bool is_compressed(std::uint32_t instr) {
+    return (instr & 0x3) != 0x3;
+}
+
+class InstructionStream {
+private:
+    unsigned long long socket;
+    int verbosity;
+    int received; // number of instructions received on the socket
+    int out_count;    // number of traces that have been produced by the core
+    int in_count;     // number of instructions that have been completely read by the core
+    int extra_bytes;  // number of bytes that remain to be read from the current instruction
+    bool ignore_next_fetch; // whether the next fetch is going to get ignored by the core (because of a taken branch)
+
+    // socket receive buffer. When we try to receive a packet, we will actually
+    // receive 1 more byte which will tell us whether we actually received
+    // a packet or not
+    char recbuf[sizeof(RVFI_DII_Instruction_Packet) + 1];
+
+    // the instructions to execute
+    std::vector<RVFI_DII_Instruction_Packet> instructions;
+
+public:
+    InstructionStream(unsigned long long _socket, int _verbosity) {
+        socket = _socket;
+        verbosity = _verbosity;
+        reset();
+    }
+
+    void reset() {
+        // Reset program state
+        instructions.clear();
+        in_count = 0;
+        out_count = 0;
+        extra_bytes = 0;
+        received = 0;
+        ignore_next_fetch = true;
+    }
+
+    void receive_test_blocking() {
+        // Attempt to receive packets until we receive an EndOfTrace packet
+        bool received_anything = false;
+        RVFI_DII_Instruction_Packet *packet;
+        do {
+            serv_socket_getN((unsigned int *) recbuf, socket, sizeof(RVFI_DII_Instruction_Packet));
+
+            // the last byte received will be 0 if our attempt to receive a packet was successful
+            if (recbuf[sizeof(RVFI_DII_Instruction_Packet)] == 0) {
+                received_anything = true;
+                packet = (RVFI_DII_Instruction_Packet *) recbuf;
+                instructions.push_back(*packet);
+                received++;
+                if (verbosity > 0) {
+                    std::cout << "received new instruction; new count: " << std::dec << received << std::endl;
+                    if (packet->dii_cmd) {
+                        std::cout << "    cmd: " << std::hex << (int) packet->dii_cmd << " instruction: " << packet->dii_insn << std::endl;
+                    } else {
+                        std::cout << "    reset command" << std::endl;
+                    }
+                }
+            } else {
+              // sleep for 0.1ms before trying to receive another instruction
+              usleep(100);
+            }
+        } while (!received_anything || packet->dii_cmd != 0);
+    }
+
+    bool pipeline_can_progress() {
+        return in_count == 0           // we have not yet inserted an instruction
+               || in_count > out_count // there is an instruction in the pipeline
+               || received > in_count; // there are instructions that we can put in the pipeline
+    }
+
+    bool pipeline_should_reset() {
+        // We reset when the pipeline is empty, and the last executed
+        // instruction was the last in the trace, and the next command is
+        // a reset command
+        return out_count == in_count // there are no instructions in the pipeline
+               && in_count == received - 1 // this is the last instruction in the trace
+               && !instructions[in_count].dii_cmd; // this is a reset command
+    }
+
+    int get_bytes(int pending_bytes) {
+        int bytes = 0;
+        int fetched = 0;
+        bool done = false;
+        int byte_shift = 0;
+        if (verbosity > 0) {
+            std::cout << "beginning instruction bundle;" << std::endl;
+            std::cout << " extra_bytes: " << std::dec << extra_bytes << std::endl;
+            std::cout << " ignore_next_fetch: " << std::boolalpha << ignore_next_fetch << std::endl;
+            std::cout << " pending_bytes: " << std::dec << pending_bytes << std::endl;
+            std::cout << " in_count: " << std::dec << in_count << std::endl;
+        }
+        while (pending_bytes > 0) {
+            unsigned int instruction;
+            if (instructions[in_count + fetched].dii_cmd) {
+                instruction = instructions[in_count + fetched].dii_insn;
+                if (verbosity > 0) {
+                    std::cout << "inserting instruction; in_count: " << std::dec << in_count + fetched << std::endl;
+                }
+                ++fetched;
+            } else {
+                instruction = 0x13;
+                done = true;
+                if (verbosity > 0) {
+                    std::cout << "inserting dummy instruction; in_count: " << std::dec << in_count + fetched << std::endl;
+                }
+            }
+            if (verbosity > 0) {
+                std::cout << "    instruction: " << std::hex << instruction << std::endl;
+            }
+            int instruction_byte_count = is_compressed(instruction) ? 2 : 4;
+            if (extra_bytes != 0) {
+                instruction >>= (instruction_byte_count - extra_bytes) * 8;
+                instruction_byte_count = extra_bytes;
+                extra_bytes = 0;
+            }
+            pending_bytes -= instruction_byte_count;
+            bytes |= instruction << (byte_shift * 8);
+            byte_shift += instruction_byte_count;
+        }
+        if (!ignore_next_fetch) {
+            extra_bytes = -pending_bytes;
+            in_count += fetched;
+            if (pending_bytes != 0 && !done) {
+              in_count--;
+            }
+        }
+        byte_shift += pending_bytes;
+        bytes &= (1ull << (byte_shift * 8)) - 1;
+        if (verbosity > 0) {
+            std::cout << "finished instruction bundle;" << std::endl;
+            std::cout << " bytes: " << std::hex << bytes << std::endl;
+            std::cout << " extra_bytes: " << std::dec << extra_bytes << std::endl;
+        }
+        ignore_next_fetch = false;
+        return bytes;
+    }
+
+    void retire() {
+        out_count++;
+    }
+
+    void rollback(bool trapped) {
+        if (trapped) {
+          in_count = out_count;
+        } else {
+          in_count = out_count + 1;
+        }
+        extra_bytes = 0;
+        ignore_next_fetch = true;
+        if (verbosity > 0) {
+            std::cout << " rollback" << std::endl;
+            std::cout << " in_count: " << std::dec << in_count;
+            std::cout << " out_count: " << std::dec << out_count;
+            std::cout << std::endl;
+        }
+    }
+};
+
 int main(int argc, char** argv, char** env) {
     if (argc != 3) {
         std::cerr << "Please provide 2 argument (port number and verbosity)" << std::endl;
@@ -98,18 +259,6 @@ int main(int argc, char** argv, char** env) {
     }
     #endif
 
-    int received = 0; // number of instructions received on the socket
-    int in_count = 0; // number of instructions that have been read by the core
-    int out_count = 0;// number of traces that have been produced by the core
-
-    // socket receive buffer. When we try to receive a packet, we will actually
-    // receive 1 more byte which will tell us whether we actually received
-    // a packet or not
-    char recbuf[sizeof(RVFI_DII_Instruction_Packet) + 1] = {0};
-
-    // the instructions to execute
-    std::vector<RVFI_DII_Instruction_Packet> instructions;
-
     // the traces to be sent to TestRIG, which are generated from the RVFI
     // signals that the core provides
     std::vector<RVFI_DII_Execution_Packet> returntrace;
@@ -125,361 +274,297 @@ int main(int argc, char** argv, char** env) {
     // pending memory accesses
     std::vector<Mem_Access> mem_accesses;
 
+    InstructionStream instruction_stream(socket, verbosity);
+
     // TODO loop condition
     while (1) {
-        // If we have not received any packets, or the last packet is not a reset command, try to receive
-        // packets until we get a reset command
-        if (received == 0 || instructions[received-1].dii_cmd) {
-            // attempt to receive packets until we receive an EndOfTrace packet
-            RVFI_DII_Instruction_Packet *packet;
-            do {
-                serv_socket_getN((unsigned int *) recbuf, socket, sizeof(RVFI_DII_Instruction_Packet));
+        instruction_stream.receive_test_blocking();
 
-                // the last byte received will be 0 if our attempt to receive a packet was successful
-                if (recbuf[sizeof(RVFI_DII_Instruction_Packet)] == 0) {
-                    packet = (RVFI_DII_Instruction_Packet *) recbuf;
-                    instructions.push_back(*packet);
-                    received++;
+        while (1) {
+            // only want to clock the core if we can push instructions in
+            // or we're waiting for some output
+            if (instruction_stream.pipeline_can_progress()) {
+                // When there is a valid RVFI signal, read the RVFI data, add it to
+                // the end of the trace and increment out_count
+                if (top->rvfi_valid) {
+                    RVFI_DII_Execution_Packet execpacket = readRVFI(top, false);
+                    returntrace.push_back(execpacket);
+                    // send the return trace every time there is a
+                    // valid RVFI trace to aid debugging
+                    // This could be removed to improve performance
+                    sendReturnTrace(returntrace, socket);
+
+                    instruction_stream.retire();
+
                     if (verbosity > 0) {
-                        std::cout << "received new instruction; new count: " << std::dec << received << std::endl;
-                        if (packet->dii_cmd) {
-                            std::cout << "    cmd: " << std::hex << (int) packet->dii_cmd << " instruction: " << packet->dii_insn << std::endl;
-                        } else {
-                            std::cout << "    reset command" << std::endl;
+                        std::cout << "rvfi trace received;"
+                                  << " instruction: " << std::hex << execpacket.rvfi_insn
+                                  << std::endl;
+                    }
+                }
+
+                // Reset when necessary
+                if (instruction_stream.pipeline_should_reset()) {
+                    if (verbosity > 0) {
+                        std::cout << "Executing reset" << std::endl;
+                    }
+
+                    // Set the reset signal and clock the core a few times
+                    // Also record traces
+                    top->rst_ni = 0;
+                    for (int i = 0; i < 10; i++) {
+                        top->clk_i = !top->clk_i;
+                        top->eval();
+                        main_time++;
+                        #if VM_TRACE
+                        if (verbosity > 2) {
+                            trace_obj->dump(main_time);
+                            trace_obj->flush();
                         }
+                        #endif
                     }
-                } else {
-                  // sleep for 0.1ms before trying to receive another instruction
-                  usleep(100);
-                }
+                    top->rst_ni = 1;
 
-            } while (packet->dii_cmd != 0);
-        }
+                    // The returned trace needs a packet at the end with
+                    // rvfi_halt set to 1
+                    RVFI_DII_Execution_Packet rstpacket = {
+                        .rvfi_halt = 1
+                    };
+                    returntrace.push_back(rstpacket);
+                    sendReturnTrace(returntrace, socket);
 
-        // only want to clock the core if we can push instructions in
-        // or we're waiting for some output
-        if (received > 0                // we have instructions to feed into the core
-            && (in_count == 0           // we have not yet inserted an instruction
-                || in_count > out_count // there is an instruction in the pipeline
-                || received > in_count) // there are instructions that we can put in the pipeline
-           ) {
-            // When there is a valid RVFI signal, read the RVFI data, add it to
-            // the end of the trace and increment out_count
-            if (top->rvfi_valid) {
-                RVFI_DII_Execution_Packet execpacket = readRVFI(top, false);
-                returntrace.push_back(execpacket);
-                // temporarily send the return trace every time there is a
-                // valid RVFI trace to aid debugging
-                // TODO remove this
-                sendReturnTrace(returntrace, socket);
+                    instruction_stream.reset();
 
-                out_count++;
-                if (verbosity > 0) {
-                    std::cout << "rvfi trace received;"
-                              << " instruction: " << std::hex << execpacket.rvfi_insn
-                              << " out_count: " << std::dec << out_count
-                              << std::endl;
-                }
-            }
+                    // Reset core inputs
+                    top->instr_rdata_i = 0;
+                    top->instr_rvalid_i = 0;
+                    top->instr_gnt_i = 0;
+                    top->instr_err_i = 0;
+                    top->boot_addr_i = 0x80000000;
 
-
-            // Reset when necessary
-            // We reset when the pipeline is empty, and the last executed
-            // instruction was the last in the trace, and the next command is
-            // a reset command
-            if (out_count == in_count // there are no instructions in the pipeline
-                && in_count == received - 1 // this is the last instruction in the trace
-                && !instructions[in_count].dii_cmd // this is a reset command
-               ) {
-                if (verbosity > 0) {
-                    std::cout << "Executing reset" << std::endl;
-                }
-
-                // Set the reset signal and clock the core a few times
-                // Also record traces
-                top->rst_ni = 0;
-                for (int i = 0; i < 10; i++) {
-                    top->clk_i = !top->clk_i;
-                    top->eval();
-                    main_time++;
-                    #if VM_TRACE
-                    if (verbosity > 2) {
-                        trace_obj->dump(main_time);
-                        trace_obj->flush();
+                    // Reset memory
+                    for (int i = 0; i < memory_size; i++) {
+                        memory[i] = 0;
                     }
-                    #endif
-                }
-                top->rst_ni = 1;
+                    for (int i = 0; i < memory_size/4; i++) {
+                        tags[i] = 0;
+                    }
 
-                // The returned trace needs a packet at the end with
-                // rvfi_halt set to 1
-                RVFI_DII_Execution_Packet rstpacket = {
-                    .rvfi_halt = 1
-                };
-                returntrace.push_back(rstpacket);
-                sendReturnTrace(returntrace, socket);
-
-                // Reset program state
-                instructions.clear();
-                in_count = 0;
-                out_count = 0;
-                received = 0;
-
-                // Reset core inputs
-                top->instr_rdata_i = 0;
-                top->instr_rvalid_i = 0;
-                top->instr_gnt_i = 0;
-                top->instr_err_i = 0;
-                top->boot_addr_i = 0x80000000;
-
-                // Reset memory
-                for (int i = 0; i < memory_size; i++) {
-                    memory[i] = 0;
-                }
-                for (int i = 0; i < memory_size/4; i++) {
-                    tags[i] = 0;
+                    break;
                 }
 
-                continue;
-            }
-
-            // TODO need to track whether an instruction that was input was
-            // actually executed or whether it was skipped (branch pred miss,
-            // exception, etc)
-            // For now, experiment and see if these static instruction offsets
-            // work
-            if ((top->rvfi_valid && top->rvfi_trap) || top->perf_xret_o) {
-                // there was an exception; roll back the input instruction counter
-                // When there is an exception/xret, the RVFI data is returned
-                // while the controller is in FLUSH state, so the new PC is
-                // being calculated this cycle but is not the one that the fetch
-                // stage requests.
-                // This means the next 2 (if an instruction was requested this
-                // cycle) or 1 (if an instruction was not requested)
-                // instructions provided will be flushed, so we move back the
-                // input instruction counter accordingly to account for the next
-                // 2 or 1 fetches
-                in_count = top->instr_gnt_i ? out_count-1 : out_count;
-                if (verbosity > 0) {
-                    std::cout << "Encountered exception"
-                              << " in_count: " << std::dec << in_count
-                              << " out_count: " << std::dec << out_count
-                              << std::endl;
+                // TODO need to track whether an instruction that was input was
+                // actually executed or whether it was skipped (branch pred miss,
+                // exception, etc)
+                // For now, experiment and see if these static instruction offsets
+                // work
+                if ((top->rvfi_valid && top->rvfi_trap) || top->perf_xret_o) {
+                    // there was an exception; roll back the input instruction counter
+                    // When there is an exception/xret, the RVFI data is returned
+                    // while the controller is in FLUSH state, so the new PC is
+                    // being calculated this cycle but is not the one that the fetch
+                    // stage requests.
+                    // This means the next 2 (if an instruction was requested this
+                    // cycle) or 1 (if an instruction was not requested)
+                    // instructions provided will be flushed, so we move back the
+                    // input instruction counter accordingly to account for the next
+                    // 2 or 1 fetches
+                    // Note also that RVFI reports are latched one extra cycle.
+                    if (verbosity > 0) {
+                        std::cout << "Encountered exception" << std::endl;
+                    }
+                    instruction_stream.rollback(true);
+                    //in_count = top->instr_gnt_i ? out_count-1 : out_count;
+                } else if (top->perf_jump_o || top->perf_tbranch_o) {
+                    // there was a jump or taken branch; roll back as above
+                    // both the jump and branch have the same consequences and flush the
+                    // same amount of stuff from the pipeline so we can treat them
+                    // the same
+                    // Jumps + branches are handled in ID, so when one is taken, IF
+                    // will be flushed
+                    // if we provide an instruction this cycle, it will be flushed
+                    // so we provide the jump again so that the next cycle, the
+                    // instruction after the jump will be provided
+                    // if we do not provide an instruction this cycle, then the
+                    // instruction provided the next cycle will be executed, so we
+                    // make our instruction counter point to that
+                    // instructions[out_count] points at the instruction _after_ the
+                    // most recently retired instruction (because of 0 indexing)
+                    // i.e. this jump (which has not yet retired)
+                    if (verbosity > 0) {
+                        std::cout << "Encountered branch/jump" << std::endl;
+                    }
+                    instruction_stream.rollback(false);
+                    //in_count = top->instr_gnt_i ? out_count : out_count + 1;
                 }
-            } else if (top->perf_jump_o || top->perf_tbranch_o) {
-                // there was a jump or taken branch; roll back as above
-                // both the jump and branch have the same consequences and flush the
-                // same amount of stuff from the pipeline so we can treat them
-                // the same
-                // Jumps + branches are handled in ID, so when one is taken, IF
-                // will be flushed
-                // if we provide an instruction this cycle, it will be flushed
-                // so we provide the jump again so that the next cycle, the
-                // instruction after the jump will be provided
-                // if we do not provide an instruction this cycle, then the
-                // instruction provided the next cycle will be executed, so we
-                // make our instruction counter point to that
-                // instructions[out_count] points at the instruction _after_ the
-                // most recently retired instruction (because of 0 indexing)
-                // i.e. this jump (which has not yet retired)
-                in_count = top->instr_gnt_i ? out_count : out_count + 1;
-                if (verbosity > 0) {
-                    std::cout << "Encountered branch/jump"
-                              << " in_count: " << std::dec << in_count
-                              << " out_count: " << std::dec << out_count
-                              << std::endl;
-                }
-            }
 
-            // A response is always issued on the cycle after it is granted
-            // Since we haven't updated instr_gnt_i yet, it has its value from
-            // the previous cycle
-            top->instr_rvalid_i = top->instr_gnt_i;
+                // A response is always issued on the cycle after it is granted
+                // Since we haven't updated instr_gnt_i yet, it has its value from
+                // the previous cycle
+                top->instr_rvalid_i = top->instr_gnt_i;
 
-            // If there was a gnt_i signal last cycle, then provide an
-            // instruction
-            if (top->instr_gnt_i || top->perf_if_cheri_err_o) {
-                // TODO handle requests out of bounds
-                if (1) {
-                //if (instr_addr_prev >= 0x80000000 && instr_addr_prev < 0x80010000) {
-                    // address is in range
+                // If there was a gnt_i signal last cycle, then provide an
+                // instruction bundle
+                if (top->instr_gnt_i || top->perf_if_cheri_err_o) {
                     top->instr_err_i = 0;
                     top->boot_addr_i = 0x00000000;
 
-                    if (instructions[in_count].dii_cmd) {
-                        top->instr_rdata_i = instructions[in_count].dii_insn;
-                        if (verbosity > 0) {
-                            std::cout << "inserting instruction; in_count: " << std::dec << in_count << std::endl;
-                            std::cout << "    instruction: " << std::hex << top->instr_rdata_i << std::endl;
-                        }
-                        in_count++;
-                    } else {
-                        top->instr_rdata_i = 0x13;
-                        if (verbosity > 0) {
-                            std::cout << "inserting dummy instruction; in_count: " << std::dec << in_count << std::endl;
-                            std::cout << "    instruction: " << std::hex << top->instr_rdata_i << std::endl;
-                        }
-                    }
+                    top->instr_rdata_i = instruction_stream.get_bytes(4 - top->instr_addr_lo_o) << (top->instr_addr_lo_o * 8);
+                    std::cout << "injecting " << std::hex << top->instr_rdata_i << std::endl;
                 } else {
-                    // address is not in range
-                    top->instr_err_i = 1;
-                    if (verbosity > 0) {
-                        std::cout << "instruction request out of range; in_count: " << std::dec << in_count << std::endl;
-                        std::cout << "    address: " << std::hex << instr_addr_prev << std::endl;
-                    }
+                    // Perform side effects by fetching 0 bytes: in particular, reset "ignore_current_fetch"
+                    instruction_stream.get_bytes(0);
                 }
-            }
 
-            // handle memory requests if there is a pending memory request that
-            // has reached a delay of 0
-            if (mem_accesses.size() > 0 && mem_accesses[0].delay == 0) {
-                top->data_rvalid_i = 1;
-                uint64_t data_addr_prev  = mem_accesses[0].addr;
-                uint64_t data_be_prev    = mem_accesses[0].be;
-                uint64_t data_we_prev    = mem_accesses[0].write ? 1 : 0;
-                uint64_t data_wdata_prev = mem_accesses[0].data;
-                bool addr_out_of_range = data_addr_prev < memory_base
-                                         || data_addr_prev >= memory_base + memory_size;
-                int int_mem_addr = data_addr_prev - memory_base;
-                if (addr_out_of_range) {
-                    top->data_err_i = 1;
-                    if (verbosity > 0) {
-                        std::cout << "memory read out of range" << std::endl;
-                        std::cout << "addr: " << std::hex << data_addr_prev << std::endl;
-                    }
-                } else {
-                    top->data_err_i = 0;
-                    if (data_we_prev) {
-                        // write
-                        for (int i = 0; i < 4; i++) {
-                            if ((data_be_prev >> i) & 1) {
-                                memory[int_mem_addr + i] = (uint8_t) (data_wdata_prev >> (i*8));
+                // handle memory requests if there is a pending memory request that
+                // has reached a delay of 0
+                if (mem_accesses.size() > 0 && mem_accesses[0].delay == 0) {
+                    top->data_rvalid_i = 1;
+                    uint64_t data_addr_prev  = mem_accesses[0].addr;
+                    uint64_t data_be_prev    = mem_accesses[0].be;
+                    uint64_t data_we_prev    = mem_accesses[0].write ? 1 : 0;
+                    uint64_t data_wdata_prev = mem_accesses[0].data;
+                    bool addr_out_of_range = data_addr_prev < memory_base
+                                             || data_addr_prev >= memory_base + memory_size;
+                    int int_mem_addr = data_addr_prev - memory_base;
+                    if (addr_out_of_range) {
+                        top->data_err_i = 1;
+                        if (verbosity > 0) {
+                            std::cout << "memory read out of range" << std::endl;
+                            std::cout << "addr: " << std::hex << data_addr_prev << std::endl;
+                        }
+                    } else {
+                        top->data_err_i = 0;
+                        if (data_we_prev) {
+                            // write
+                            for (int i = 0; i < 4; i++) {
+                                if ((data_be_prev >> i) & 1) {
+                                    memory[int_mem_addr + i] = (uint8_t) (data_wdata_prev >> (i*8));
+                                }
                             }
-                        }
-                        if (data_be_prev == 0xf) {
-                            tags[int_mem_addr/4] = (uint8_t) (data_wdata_prev >> 32);
+                            if (data_be_prev == 0xf) {
+                                tags[int_mem_addr/4] = (uint8_t) (data_wdata_prev >> 32);
+                            } else {
+                                tags[int_mem_addr/4] = 0;
+                            }
+                            if (verbosity > 0) {
+                                std::cout << "store addr: " << std::hex << data_addr_prev
+                                          << " data_wdata_prev: " << std::hex << data_wdata_prev
+                                          << " data_be_prev: " << std::hex << data_be_prev
+                                          << " memory values:"
+                                          << " " << std::hex << (int) memory[int_mem_addr]
+                                          << " " << std::hex << (int) memory[int_mem_addr + 1]
+                                          << " " << std::hex << (int) memory[int_mem_addr + 2]
+                                          << " " << std::hex << (int) memory[int_mem_addr + 3]
+                                          << " tag: " << std::hex << (int) tags[int_mem_addr/4]
+                                          << std::endl;
+                            }
                         } else {
-                            tags[int_mem_addr/4] = 0;
+                            // read
+                            // ignore byte-enable for now
+                            uint64_t val = 0;
+                            for (int i = 0; i < 4; i++) {
+                                val |= ((uint32_t) memory[int_mem_addr + i]) << (8*i);
+                            }
+                            val |= ((uint64_t) tags[int_mem_addr/4]) << 32;
+                            //uint32_t val = memory[int_mem_addr]
+                            //             | memory[int_mem_addr+1] << 8
+                            //             | memory[int_mem_addr+2] << 16
+                            //             | memory[int_mem_addr+3] << 24;
+                            if (verbosity > 0) {
+                                std::cout << "read addr: " << std::hex << data_addr_prev
+                                          << " read value: " << std::hex << val << std::endl;
+                            }
+                            top->data_rdata_i = val;
                         }
-                        if (verbosity > 0) {
-                            std::cout << "store addr: " << std::hex << data_addr_prev
-                                      << " data_wdata_prev: " << std::hex << data_wdata_prev
-                                      << " data_be_prev: " << std::hex << data_be_prev
-                                      << " memory values:"
-                                      << " " << std::hex << (int) memory[int_mem_addr]
-                                      << " " << std::hex << (int) memory[int_mem_addr + 1]
-                                      << " " << std::hex << (int) memory[int_mem_addr + 2]
-                                      << " " << std::hex << (int) memory[int_mem_addr + 3]
-                                      << " tag: " << std::hex << (int) tags[int_mem_addr/4]
-                                      << std::endl;
-                        }
-                    } else {
-                        // read
-                        // ignore byte-enable for now
-                        uint64_t val = 0;
-                        for (int i = 0; i < 4; i++) {
-                            val |= ((uint32_t) memory[int_mem_addr + i]) << (8*i);
-                        }
-                        val |= ((uint64_t) tags[int_mem_addr/4]) << 32;
-                        //uint32_t val = memory[int_mem_addr]
-                        //             | memory[int_mem_addr+1] << 8
-                        //             | memory[int_mem_addr+2] << 16
-                        //             | memory[int_mem_addr+3] << 24;
-                        if (verbosity > 0) {
-                            std::cout << "read addr: " << std::hex << data_addr_prev
-                                      << " read value: " << std::hex << val << std::endl;
-                        }
-                        top->data_rdata_i = val;
                     }
+                    // remove the memory access that we've just completed
+                    mem_accesses.erase(mem_accesses.begin());
+                } else {
+                    // no response
+                    top->data_rvalid_i = 0;
+                    top->data_err_i = 0;
                 }
-                // remove the memory access that we've just completed
-                mem_accesses.erase(mem_accesses.begin());
-            } else {
-                // no response
-                top->data_rvalid_i = 0;
-                top->data_err_i = 0;
+
+
+                top->eval();
+                main_time++;
+                // tracing
+                #if VM_TRACE
+                if (verbosity > 2) {
+                    trace_obj->dump(main_time);
+                    trace_obj->flush();
+                }
+                #endif
+
+                // instr_gnt_i can be high in the same cycle that instr_req_o goes
+                // high, so set it to follow instr_req_o here and evaluate again
+                // so that combinational logic that depends on it gets updated
+                top->instr_gnt_i = top->instr_req_o;
+                // we can always service memory requests
+                top->data_gnt_i = top->data_req_o;
+                // record requests
+                if (top->data_req_o) {
+                    Mem_Access access = {
+                        .delay = 1, // start delay at 1 since it is about to be
+                                    // reduced
+                        .addr  = top->data_addr_o,
+                        .write = top->data_we_o != 0,
+                        .be    = top->data_be_o,
+                        .data  = top->data_wdata_o
+                    };
+                    mem_accesses.push_back(access);
+                }
+                // decrease delay of all accesses
+                for (int i = 0; i < mem_accesses.size(); i++) {
+                    mem_accesses[i].delay--;
+                }
+                if (verbosity > 0 && top->data_gnt_i) {
+                    std::cout << "setting data_gnt_i" << std::endl;
+                    std::cout << "addr: " << std::hex << top->data_addr_o << std::endl;
+                }
+
+                if (top->instr_req_o) {
+                    instr_addr_prev = top->instr_addr_o;
+                }
+
+                top->eval();
+                main_time++;
+
+                // tracing
+                #if VM_TRACE
+                if (verbosity > 2) {
+                    trace_obj->dump(main_time);
+                    trace_obj->flush();
+                }
+                #endif
+
+                // Clock the core and trace signals
+                top->clk_i = 0;
+                top->eval();
+                main_time++;
+
+                // tracing
+                #if VM_TRACE
+                if (verbosity > 2) {
+                    trace_obj->dump(main_time);
+                    trace_obj->flush();
+                }
+                #endif
+
+
+                top->clk_i = 1;
+                top->eval();
+                main_time++;
+
+                // tracing
+                #if VM_TRACE
+                if (verbosity > 2) {
+                    trace_obj->dump(main_time);
+                    trace_obj->flush();
+                }
+                #endif
             }
-
-
-            top->eval();
-            main_time++;
-            // tracing
-            #if VM_TRACE
-            if (verbosity > 2) {
-                trace_obj->dump(main_time);
-                trace_obj->flush();
-            }
-            #endif
-
-            // instr_gnt_i can be high in the same cycle that instr_req_o goes
-            // high, so set it to follow instr_req_o here and evaluate again
-            // so that combinational logic that depends on it gets updated
-            top->instr_gnt_i = top->instr_req_o;
-                               //&& received > in_count;
-                               //&& instructions[in_count].dii_cmd;
-            // we can always service memory requests
-            top->data_gnt_i = top->data_req_o;
-            // record requests
-            if (top->data_req_o) {
-                Mem_Access access = {
-                    .delay = 1, // start delay at 1 since it is about to be
-                                // reduced
-                    .addr  = top->data_addr_o,
-                    .write = top->data_we_o != 0,
-                    .be    = top->data_be_o,
-                    .data  = top->data_wdata_o
-                };
-                mem_accesses.push_back(access);
-            }
-            // decrease delay of all accesses
-            for (int i = 0; i < mem_accesses.size(); i++) {
-                mem_accesses[i].delay--;
-            }
-            if (verbosity > 0 && top->data_gnt_i) {
-                std::cout << "setting data_gnt_i" << std::endl;
-                std::cout << "addr: " << std::hex << top->data_addr_o << std::endl;
-            }
-
-            if (top->instr_req_o) {
-                instr_addr_prev = top->instr_addr_o;
-            }
-
-            top->eval();
-            main_time++;
-
-            // tracing
-            #if VM_TRACE
-            if (verbosity > 2) {
-                trace_obj->dump(main_time);
-                trace_obj->flush();
-            }
-            #endif
-
-            // Clock the core and trace signals
-            top->clk_i = 0;
-            top->eval();
-            main_time++;
-
-            // tracing
-            #if VM_TRACE
-            if (verbosity > 2) {
-                trace_obj->dump(main_time);
-                trace_obj->flush();
-            }
-            #endif
-
-
-            top->clk_i = 1;
-            top->eval();
-            main_time++;
-
-            // tracing
-            #if VM_TRACE
-            if (verbosity > 2) {
-                trace_obj->dump(main_time);
-                trace_obj->flush();
-            }
-            #endif
         }
     }
 

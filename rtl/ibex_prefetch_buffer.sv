@@ -10,8 +10,7 @@
  * paths to the instruction cache.
  */
 module ibex_prefetch_buffer #(
-  parameter bit ResetAll        = 1'b0,
-  parameter int TestRIG         = 0
+  parameter bit ResetAll        = 1'b0
 ) (
   input  logic        clk_i,
   input  logic        rst_ni,
@@ -35,6 +34,10 @@ module ibex_prefetch_buffer #(
   output logic                       instr_req_o,
   input  logic                       instr_gnt_i,
   output logic [31:0]                instr_addr_o,
+  // Preserve the low address bits for TestRIG so it knows how to align injected instructions
+`ifdef DII
+  output logic [1:0]                 instr_addr_lo_o,
+`endif
   input  logic [31:0]                instr_rdata_i,
   input  logic                       instr_err_i,
   input  logic                       instr_rvalid_i,
@@ -128,8 +131,7 @@ module ibex_prefetch_buffer #(
 
   ibex_fetch_fifo #(
     .NUM_REQS (NUM_REQS),
-    .ResetAll (ResetAll),
-    .TestRIG  (TestRIG)
+    .ResetAll (ResetAll)
   ) fifo_i (
       .clk_i                 ( clk_i             ),
       .rst_ni                ( rst_ni            ),
@@ -258,6 +260,9 @@ module ibex_prefetch_buffer #(
                                           fetch_addr_q;
 
   assign instr_addr_w_aligned = {instr_addr[31:2], 2'b00};
+`ifdef DII
+  assign instr_addr_lo_o = instr_addr[1:0];
+`endif
 
   ///////////////////////////////
   // Request outstanding queue //

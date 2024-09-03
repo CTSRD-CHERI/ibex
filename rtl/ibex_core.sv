@@ -63,6 +63,10 @@ module ibex_core import ibex_pkg::*; #(
   input  logic [MemDataWidth-1:0]      instr_rdata_i,
   input  logic                         instr_err_i,
 
+`ifdef DII
+  output logic [1:0]                   instr_addr_lo_o,
+`endif
+
   // Data memory interface
   output logic                         data_req_o,
   input  logic                         data_gnt_i,
@@ -486,6 +490,10 @@ module ibex_core import ibex_pkg::*; #(
     .instr_rdata_i     (instr_rdata_i),
     .instr_bus_err_i   (instr_err_i),
     .instr_intg_err_o  (instr_intg_err),
+
+`ifdef DII
+    .instr_addr_lo_o   (instr_addr_lo_o),
+`endif
 
     .instr_cheri_exc_i (cheri_exceptions_instr),
     .instr_upper_exc_i (instr_upper_exc),

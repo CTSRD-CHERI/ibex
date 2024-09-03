@@ -21,6 +21,11 @@ parameters:
     paramtype: vlogdefine
     default: true
 
+  DII:
+    datatype: bool
+    paramtype: vlogdefine
+    default: true
+
   TestRIG:
     datatype: int
     paramtype: vlogparam
@@ -37,6 +42,7 @@ targets:
     default_tool: verilator
     parameters:
       - RVFI=true
+      - DII=true
       - TestRIG
     tools:
       verilator:

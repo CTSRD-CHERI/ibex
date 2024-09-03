@@ -269,6 +269,7 @@ module ibex_lockstep import ibex_pkg::*; #(
   delayed_outputs_t [OutputsOffset-1:0]  core_outputs_q;
   delayed_outputs_t                      core_outputs_in;
   delayed_outputs_t                      shadow_outputs_d, shadow_outputs_q;
+  logic [1:0] unused_instr_addr_lo;
 
   // Assign core outputs to the structure
   assign core_outputs_in.instr_req           = instr_req_i;
@@ -353,6 +354,9 @@ module ibex_lockstep import ibex_pkg::*; #(
     .instr_gnt_i         (shadow_inputs_q[0].instr_gnt),
     .instr_rvalid_i      (shadow_inputs_q[0].instr_rvalid),
     .instr_addr_o        (shadow_outputs_d.instr_addr),
+`ifdef DII
+    .instr_addr_lo_o     (unused_instr_addr_lo),
+`endif
     .instr_rdata_i       (shadow_inputs_q[0].instr_rdata),
     .instr_err_i         (shadow_inputs_q[0].instr_err),
 
