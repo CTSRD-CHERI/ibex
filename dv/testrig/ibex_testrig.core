@@ -31,6 +31,13 @@ parameters:
     paramtype: vlogparam
     default: 1
 
+  TagController:
+    datatype: int
+    default: 1
+    paramtype: vlogdefine
+    description: "Whether to enable the tag controller, enabling Ibex to be connected without extra SoC bits for tags."
+
+
 # TODO
 # parameters:
 targets:
@@ -44,6 +51,7 @@ targets:
       - RVFI=true
       - DII=true
       - TestRIG
+      - TagController
     tools:
       verilator:
         mode: cc

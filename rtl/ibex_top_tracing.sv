@@ -150,6 +150,13 @@ module ibex_top_tracing import ibex_pkg::*; #(
   assign unused_perf_tbranch_o = perf_tbranch_o;
   assign unused_perf_if_cheri_err_o = perf_if_cheri_err_o;
 
+`ifdef TagController
+  logic  unused_rdata_tag_i;
+  assign unused_rdata_tag_i = data_rdata_i[32];
+
+  assign data_wdata_o[32] = 1'b0;
+`endif
+
   ibex_top #(
     .PMPEnable        ( PMPEnable        ),
     .PMPGranularity   ( PMPGranularity   ),
@@ -198,9 +205,17 @@ module ibex_top_tracing import ibex_pkg::*; #(
     .data_we_o,
     .data_be_o,
     .data_addr_o,
-    .data_wdata_o,
+`ifdef TagController
+    .data_wdata_o(data_wdata_o[31:0]),
+`else
+    .data_wdata_o(data_wdata_o),
+`endif
     .data_wdata_intg_o,
-    .data_rdata_i,
+`ifdef TagController
+    .data_rdata_i(data_rdata_i[31:0]),
+`else
+    .data_rdata_i(data_rdata_i),
+`endif
     .data_rdata_intg_i,
     .data_err_i,
 

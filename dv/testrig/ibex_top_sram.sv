@@ -66,9 +66,17 @@ module ibex_top_sram import ibex_pkg::*; #(
   output logic                         data_we_o,
   output logic [3:0]                   data_be_o,
   output logic [31:0]                  data_addr_o,
+`ifdef TagController
   output logic [31:0]                  data_wdata_o,
+`else
+  output logic [32:0]                  data_wdata_o,
+`endif
   output logic [6:0]                   data_wdata_intg_o,
+`ifdef TagController
   input  logic [31:0]                  data_rdata_i,
+`else
+  input  logic [32:0]                  data_rdata_i,
+`endif
   input  logic [6:0]                   data_rdata_intg_i,
   input  logic                         data_err_i,
 

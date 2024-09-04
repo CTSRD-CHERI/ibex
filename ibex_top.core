@@ -69,6 +69,12 @@ parameters:
     paramtype: vlogdefine
     description: "Bitmanip implementation parameter enum. See the ibex_pkg::rv32b_e enum in ibex_pkg.sv for permitted values."
 
+  TagController:
+    datatype: int
+    default: 1
+    paramtype: vlogdefine
+    description: "Whether to enable the tag controller, enabling Ibex to be connected without extra SoC bits for tags."
+
   RegFile:
     datatype: str
     default: ibex_pkg::RegFileFF

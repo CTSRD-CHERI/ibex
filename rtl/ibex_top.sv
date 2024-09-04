@@ -70,9 +70,17 @@ module ibex_top import ibex_pkg::*; #(
   output logic                         data_we_o,
   output logic [3:0]                   data_be_o,
   output logic [31:0]                  data_addr_o,
+`ifdef TagController
   output logic [31:0]                  data_wdata_o,
+`else
+  output logic [32:0]                  data_wdata_o,
+`endif
   output logic [6:0]                   data_wdata_intg_o,
+`ifdef TagController
   input  logic [31:0]                  data_rdata_i,
+`else
+  input  logic [32:0]                  data_rdata_i,
+`endif
   input  logic [6:0]                   data_rdata_intg_i,
   input  logic                         data_err_i,
 
@@ -246,6 +254,7 @@ module ibex_top import ibex_pkg::*; #(
   // Tag controller instantiation //
   //////////////////////////////////
 
+`ifdef TagController
   tag_controller u_tag_controller (
     .clk_i(clk),
     .rst_ni,
@@ -272,6 +281,21 @@ module ibex_top import ibex_pkg::*; #(
     .mem_rdata_intg_i(data_rdata_intg_i),
     .mem_err_i(data_err_i)
   );
+`else
+  always_comb begin
+    data_req_o = data_req_core;
+    data_gnt_core = data_gnt_i;
+    data_rvalid_core = data_rvalid_i;
+    data_we_o = data_we_core;
+    data_be_o = data_be_core;
+    data_addr_o = data_addr_core;
+    data_wdata_o = data_wdata_core;
+    data_wdata_intg_o = data_wdata_intg_core;
+    data_rdata_core = data_rdata_i;
+    data_rdata_intg_core = data_rdata_intg_i;
+    data_err_core = data_err_i;
+  end
+`endif
 
   ////////////////////////
   // Core instantiation //

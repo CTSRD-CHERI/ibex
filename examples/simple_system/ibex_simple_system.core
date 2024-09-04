@@ -37,6 +37,12 @@ parameters:
     paramtype: vlogdefine
     description: "Register file implementation parameter enum. See the ibex_pkg::regfile_e enum in ibex_pkg.sv for permitted values."
 
+  TagController:
+    datatype: int
+    default: 1
+    paramtype: vlogdefine
+    description: "Whether to enable the tag controller, enabling Ibex to be connected without extra SoC bits for tags."
+
   ICache:
     datatype: int
     default: 0
