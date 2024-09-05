@@ -185,7 +185,7 @@ public:
             bytes |= instruction << (byte_shift * 8);
             byte_shift += instruction_byte_count;
         }
-        if (!ignore_next_fetch) {
+        if (fetched > 0 && !ignore_next_fetch) {
             extra_bytes = -pending_bytes;
             in_count += fetched;
             if (pending_bytes != 0 && !done) {
