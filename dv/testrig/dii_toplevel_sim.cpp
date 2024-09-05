@@ -145,8 +145,8 @@ public:
                && !instructions[in_count].dii_cmd; // this is a reset command
     }
 
-    int get_bytes(int pending_bytes) {
-        int bytes = 0;
+    unsigned int get_bytes(int pending_bytes) {
+        unsigned int bytes = 0;
         int fetched = 0;
         bool done = false;
         int byte_shift = 0;
