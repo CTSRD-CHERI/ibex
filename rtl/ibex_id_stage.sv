@@ -482,7 +482,7 @@ module ibex_id_stage #(
   always_comb begin
     cheri_imm_b = '0;
     unique case (cheri_imm_b_mux_sel)
-      CHERI_IMM_B_INCR_PC: cheri_imm_b = 'h4;
+      CHERI_IMM_B_INCR_PC: cheri_imm_b = instr_is_compressed_i ? 32'h2 : 32'h4;
       CHERI_IMM_B_I:       cheri_imm_b = imm_i_type;
       CHERI_IMM_B_S:       cheri_imm_b = imm_s_type;
       CHERI_IMM_B_U:       cheri_imm_b = imm_u_type;

@@ -728,7 +728,7 @@ module ibex_cheri_alu #(
                     alu_operator_o  = ALU_ADD;
                   end else begin
                     alu_operand_a_o = a_getOffset_o;
-                    alu_operand_b_o = 4;
+                    alu_operand_b_o = operand_b_int;
                     alu_operator_o  = ALU_ADD;
                     a_setOffset_i   = alu_result_i[IntWidth-1:0];
                     a_setKind_cap_i = a_setOffset_o[CheriCapWidth-1:0];
