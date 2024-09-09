@@ -396,7 +396,7 @@ module ibex_cheri_alu #(
               result_o         = a_setOffset_o[CheriCapWidth-1:0];
               wrote_capability = 1'b1;
 
-              exceptions_a_o.seal_violation = exceptions_a.seal_violation;
+              result_o[CheriCapWidth-1] = result_o[CheriCapWidth-1] & !a_isSealed_o;
 
               if (Verbosity) begin
                 $display("csetoffset output: %h   exceptions: %h   exceptions_b: %h", result_o, exceptions_a_o, exceptions_b_o);
@@ -409,7 +409,7 @@ module ibex_cheri_alu #(
               result_o         = a_setAddr_o[CheriCapWidth-1:0];
               wrote_capability = 1'b1;
 
-              exceptions_a_o.seal_violation = exceptions_a.seal_violation;
+              result_o[CheriCapWidth-1] = result_o[CheriCapWidth-1] & !a_isSealed_o;
 
               if (Verbosity) begin
                 $display("csetaddr output: %h   exceptions: %h   exceptions_b: %h", result_o, exceptions_a_o, exceptions_b_o);
@@ -420,11 +420,9 @@ module ibex_cheri_alu #(
               a_incOffset_i = b_getAddr_o;
 
               result_o                  = a_incOffset_o[CheriCapWidth-1:0];
-              // only preserve the tag if the result was "exact"
-              result_o[CheriCapWidth-1] = result_o[CheriCapWidth-1] & a_incOffset_o[CheriCapWidth];
+              // only preserve the tag if the result was "exact" and the input was not sealed
+              result_o[CheriCapWidth-1] = result_o[CheriCapWidth-1] & a_incOffset_o[CheriCapWidth] & !a_isSealed_o;
               wrote_capability          = 1'b1;
-
-              exceptions_a_o.seal_violation = exceptions_a.seal_violation;
 
               if (Verbosity) begin
                 $display("cincoffset output: %h   exceptions: %h   exceptions_b: %h", result_o, exceptions_a_o, exceptions_b_o);
@@ -822,11 +820,9 @@ module ibex_cheri_alu #(
           a_incOffset_i = operand_b_int;
 
           result_o                  = a_incOffset_o[CheriCapWidth-1:0];
-          // only preserve the tag if the result was "exact"
-          result_o[CheriCapWidth-1] = result_o[CheriCapWidth-1] & a_incOffset_o[CheriCapWidth];
+          // only preserve the tag if the result was "exact" and the input was not sealed
+          result_o[CheriCapWidth-1] = result_o[CheriCapWidth-1] & a_incOffset_o[CheriCapWidth] & !a_isSealed_o;
           wrote_capability          = 1'b1;
-
-          exceptions_a_o.seal_violation = exceptions_a.seal_violation;
 
           if (Verbosity) begin
             $display  ("cincoffsetimm output: %h   exceptions: %h   exceptions_b: %h", result_o, exceptions_a_o, exceptions_b_o);
