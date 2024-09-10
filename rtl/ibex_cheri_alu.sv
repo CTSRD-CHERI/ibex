@@ -267,17 +267,8 @@ module ibex_cheri_alu #(
               result_o         = a_setBounds_o[CheriCapWidth-1:0];
               wrote_capability = 1'b1;
 
-              alu_operand_a_o = a_getAddr_o;
-              alu_operand_b_o = b_getAddr_o;
-              alu_operator_o  = ALU_ADD;
-
-              cmp_gt_a_i = alu_result_i;
-              cmp_gt_b_i = a_getTop_o;
-
-              exceptions_a_o.tag_violation    = exceptions_a.tag_violation;
-              exceptions_a_o.seal_violation   = exceptions_a.seal_violation;
-              exceptions_a_o.length_violation = exceptions_a.length_violation
-                                               | cmp_gt_res_o;
+              // Note: result_o will already have its tag cleared if the request was out-of-bounds
+              result_o[CheriCapWidth-1] = result_o[CheriCapWidth-1] & !a_isSealed_o;
 
               if (Verbosity) begin
                 $display("csetbounds output: %h   exceptions: %h", result_o, exceptions_a_o);
@@ -290,18 +281,8 @@ module ibex_cheri_alu #(
               result_o         = a_setBounds_o[CheriCapWidth-1:0];
               wrote_capability = 1'b1;
 
-              alu_operand_a_o = a_getAddr_o;
-              alu_operand_b_o = b_getAddr_o;
-              alu_operator_o  = ALU_ADD;
-
-              cmp_gt_a_i = alu_result_i;
-              cmp_gt_b_i = a_getTop_o;
-
-              exceptions_a_o.tag_violation            = exceptions_a.tag_violation;
-              exceptions_a_o.seal_violation           = exceptions_a.seal_violation;
-              exceptions_a_o.length_violation         = exceptions_a.length_violation
-                                                      | cmp_gt_res_o;
-              exceptions_a_o.inexact_bounds_violation = ~a_setBounds_o[CheriCapWidth];
+              // Note: result_o will already have its tag cleared if the request was out-of-bounds
+              result_o[CheriCapWidth-1] = result_o[CheriCapWidth-1] & !a_isSealed_o & a_setBounds_o[CheriCapWidth];
 
               if (Verbosity) begin
                 $display("csetboundse output: %h   exceptions: %h   exceptions_b: %h", result_o, exceptions_a_o, exceptions_b_o);
@@ -836,17 +817,7 @@ module ibex_cheri_alu #(
           result_o         = a_setBounds_o[CheriCapWidth-1:0];
           wrote_capability = 1'b1;
 
-          alu_operand_a_o = a_getAddr_o;
-          alu_operand_b_o = {{(IntWidth-ImmWidth){1'b0}}, operand_b_int[ImmWidth-1:0]};
-          alu_operator_o  = ALU_ADD;
-
-          cmp_gt_a_i = alu_result_i;
-          cmp_gt_b_i = a_getTop_o;
-
-          exceptions_a_o.tag_violation    = exceptions_a.tag_violation;
-          exceptions_a_o.seal_violation   = exceptions_a.seal_violation;
-          exceptions_a_o.length_violation = exceptions_a.length_violation
-                                          | cmp_gt_res_o;
+          result_o[CheriCapWidth-1] = result_o[CheriCapWidth-1] & !a_isSealed_o;
 
           if (Verbosity) begin
             $display("csetboundsimm output: %h   exceptions: %h   exceptions_b: %h", result_o, exceptions_a_o, exceptions_b_o);
