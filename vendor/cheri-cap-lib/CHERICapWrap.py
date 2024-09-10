@@ -104,16 +104,42 @@ class BlarneyGenerator(Generator):
 #   a typedef of cheri_cap_dec_t which is a decompressed capability
 # generates a _mod.sv file containing a module which combinationally takes an "opaque"
 # capability as the input and gives a decompressed capability as the output
+# In the filename, "cheri" is appended with the in-memory capability width
+# (i.e. the filename will be "cheri64_pkg.sv") so that differently sized capabilities
+# can exist
 class SystemVerilogGenerator(Generator):
   def emit(self):
-    cap_type_name = "cheri_cap_t"           # the name of the opaque cap type
-    cap_dec_type_name = "cheri_cap_dec_t"   # the name of the expanded cap type
-    cap_dec_mod_name = "cheri_cap_expander" # the name of the expanding module
-    cap_in_signal_name = "cap_i"            # the name of the input signal to the expanding module
-    cap_out_signal_name = "cap_o"           # the name of the output signal to the expanding module
-    cap_search_string = "cap"               # the string required for inferring capability width
+    # get the size of in-memory capability by assuming that the name of the
+    # modules matches "module_wrap$SIZE_..." and taking just the size part
+    in_mem_cap_size = self.modules[0].verilogModuleName()[11:]
+    in_mem_cap_size = in_mem_cap_size[:in_mem_cap_size.find("_")]
 
-    pkg_file_name = "cheri_pkg.sv"
+    cap_type_name = "cheri_cap_t"                                       # the name of the opaque cap type
+    cap_dec_type_name = "cheri_cap_dec_t"                               # the name of the expanded cap type
+    cap_dec_mod_name = "cheri{:s}_cap_expander".format(in_mem_cap_size) # the name of the expanding module
+    cap_in_signal_name = "cap_i"                                        # the name of the input signal to the expanding module
+    cap_out_signal_name = "cap_o"                                       # the name of the output signal to the expanding module
+    cap_search_string = "cap"                                           # the string required for inferring capability width
+
+
+    # this wrapper generator is intended to make access to the "getter"
+    # modules (i.e. getAddr, getTop, etc) easier/cleaner
+    # ideally, to access the field it is cleaner to say "cap.address" rather than
+    # "cap.getAddress" or "cap.validCap" rather than "cap.isValidCap"
+    # the following is a list of "keywords" to remove from the field names
+    keywords_to_remove = ["get", "is"]
+    def mod_name_to_field_name(modname):
+      for kw in keywords_to_remove:
+        if modname.startswith(kw):
+          # remove the keyword from the start
+          modname = modname[len(kw):]
+          # make first letter lowercase
+          modname = modname[0].lower() + modname[1:]
+          # return after removing the first found keyword
+          return modname
+      return modname
+
+    pkg_file_name = "cheri{:s}_pkg.sv".format(in_mem_cap_size)
     module_file_name = "{:s}.sv".format(cap_dec_mod_name)
 
     # prepend namehint if non-empty
@@ -151,7 +177,7 @@ class SystemVerilogGenerator(Generator):
     # structure definition
     struct_def_text = "  typedef struct packed {\n"
     for mod in struct_elems:
-      struct_def_text += "    logic [{:d}:{:d}] {:s};\n".format(mod.out[1]-1, 0, mod.name)
+      struct_def_text += "    logic [{:d}:{:d}] {:s};\n".format(mod.out[1]-1, 0, mod_name_to_field_name(mod.name))
     struct_def_text += "  }} {:s};\n".format(cap_dec_type_name)
 
     # package definition
@@ -161,8 +187,7 @@ class SystemVerilogGenerator(Generator):
     pkg_def_text += "endpackage\n"
 
     # module definition
-    module_def_text = "/* verilator lint_off UNUSED */\n"
-    module_def_text += "module {:s} (\n".format(cap_dec_mod_name)
+    module_def_text = "module {:s} (\n".format(cap_dec_mod_name)
     module_def_text += "  input  {:s}::{:s} {:s},\n".format(pkg_name, cap_type_name, cap_in_signal_name)
     module_def_text += "  output {:s}::{:s} {:s}\n".format(pkg_name, cap_dec_type_name, cap_out_signal_name)
     module_def_text += ");\n"
@@ -172,11 +197,10 @@ class SystemVerilogGenerator(Generator):
     for mod in struct_elems:
       module_def_text += "  {:s} {:s}_mod (\n".format(mod.verilogModuleName(), mod.name)
       module_def_text += "    .{:s}({:s}),\n".format(mod.verilogInputNames()[0], cap_in_signal_name)
-      module_def_text += "    .{:s}({:s}.{:s})\n".format(mod.verilogOutputName(), cap_out_signal_name, mod.name)
+      module_def_text += "    .{:s}({:s}.{:s})\n".format(mod.verilogOutputName(), cap_out_signal_name, mod_name_to_field_name(mod.name))
       module_def_text += "  );\n"
 
     module_def_text += "endmodule\n"
-    module_def_text += "/* verilator lint_off UNUSED */\n"
 
     return [(pkg_file_name, pkg_def_text),
             (module_file_name, module_def_text)]

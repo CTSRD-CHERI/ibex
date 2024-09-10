@@ -3,7 +3,7 @@
   target_dir: "cheri-cap-lib",
 
   upstream: {
-    url: "https://github.com/ivanmgribeiro/cheri-cap-lib",
-    rev: "6815eec12f46ecfc71f58c4db735b532688e768d",
+    url: "https://github.com/CTSRD-CHERI/cheri-cap-lib",
+    rev: "d173fe743a140b515531ef33b1412b30ff669c89",
   }
 }

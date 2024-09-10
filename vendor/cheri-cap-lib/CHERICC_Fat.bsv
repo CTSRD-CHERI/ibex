@@ -51,11 +51,16 @@ export CapW;
 export ExpW;
 export CapAddrW;
 export CBoundsW;
+export CBounds;
+export VA_Width;
 export HPerms;
 export PermsW;
 export Exp;
 export MetaInfo;
 export SetBoundsReturn;
+export CapTrim;
+export trimCap;
+export untrimCap;
 
 // ===============================================================================
 
@@ -663,6 +668,9 @@ function SetBoundsReturn#(CapFat, CapAddrW) setBoundsFat(CapFat cap, Address len
 
   Bool resultInBounds = newBaseInBounds && newTopInBounds && !addressWrap;
 
+  // Nullify the capability if the result is not in bounds
+  if (!resultInBounds) ret.isCapability = False;
+
   // Return derived capability
   return SetBoundsReturn { cap:    ret
                          , exact:  exact
@@ -713,9 +721,9 @@ function VnD#(CapFat) incOffsetFat( CapFat cap
   // The inRange test
   // ----------------
   // Conceptually, the inRange test checks the magnitude of 'offset' is less
-  // then the representable region’s size S. This ensures that the inLimits
+  // then the representable region's size S. This ensures that the inLimits
   // test result is meaningful. The test succeeds if the absolute value of
-  // 'offset' is less than S, that is −S < 'offset' < S. This test reduces to a
+  // 'offset' is less than S, that is -S < 'offset' < S. This test reduces to a
   // check that there are no significant bits in the high bits of 'offset',
   // that is they are all ones or all zeros.
   CapAddr offsetAddr = offset;
@@ -1493,5 +1501,48 @@ instance Cast#(function CapPipe f0(t y), function Bit#(CapAddrW) f1(t x));
     return f1;
   endfunction
 endinstance
+
+`ifdef CAP64
+// XXX TODO
+// This is probably the wrong fix but allows the code to compile, and the
+// code for CAP64 is not used anywhere.
+// Need to consider what the right size is.
+typedef 31 VA_Width;
+`else
+typedef 48 VA_Width;
+`endif
+// Type and function to trim unnecessary fields of a capability that is known to
+// be unsealed with the tag set (e.g. PCC)
+typedef struct {
+  Perms        perms;
+  Bit#(FlagsW) flags;
+  CBounds      bounds;
+  Bit#(VA_Width)     address;
+  Bool         validAddress;
+} CapTrim deriving(Bits, Eq, FShow);
+function CapTrim  trimCap(CapMem cm);
+  CapabilityInMemory cap = unpack(cm);
+  Bit#(TSub#(CapAddrW,VA_Width)) addr_upper = truncateLSB(cap.address);
+  return CapTrim{perms: cap.perms,
+                 flags: cap.flags,
+                 bounds: cap.bounds,
+                 address: truncate(cap.address),
+                 validAddress: (addr_upper==signExtend(cap.address[valueOf(VA_Width)-1]))
+  };
+endfunction
+function CapMem untrimCap(CapTrim ct);
+  // Encode an invalid address as the bit above the last valid bit being different.
+  Bit#(1) addressMsb = ct.address[valueOf(VA_Width)-1];
+  if (!ct.validAddress) addressMsb = ^addressMsb;
+  return pack(CapabilityInMemory{
+                isCapability: True,
+                perms: ct.perms,
+                reserved: 0,
+                flags: ct.flags,
+                otype: otype_unsealed,
+                bounds: ct.bounds,
+                address: signExtend({addressMsb,ct.address})
+  });
+endfunction
 
 endpackage
