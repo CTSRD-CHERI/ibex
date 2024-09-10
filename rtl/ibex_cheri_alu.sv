@@ -413,10 +413,6 @@ module ibex_cheri_alu #(
               result_o[IntWidth-1:0] = a_isValidCap_o ? a_getAddr_o - b_getBase_o : IntWidth'(1'b0);
               wrote_capability       = 1'b0;
 
-              exceptions_a_o.seal_violation = exceptions_a.seal_violation;
-
-              exceptions_b_o.tag_violation  = exceptions_b.tag_violation;
-
               if (Verbosity) begin
                 $display("ctoptr output: %h   exceptions: %h   exceptions_b: %h", result_o, exceptions_a_o, exceptions_b_o);
               end
@@ -434,8 +430,7 @@ module ibex_cheri_alu #(
               result_o         = ~cmp_gt_res_o ? '0
                                                : a_setOffset_o[CheriCapWidth-1:0];
 
-              exceptions_a_o.tag_violation  = cmp_gt_res_o && exceptions_a.tag_violation;
-              exceptions_a_o.seal_violation = cmp_gt_res_o && exceptions_a.seal_violation;
+              result_o[CheriCapWidth-1] = result_o[CheriCapWidth-1] & !a_isSealed_o;
 
               if (Verbosity) begin
                 $display("cfromptr output: %h   exceptions: %h   exceptions_b: %h", result_o, exceptions_a_o, exceptions_b_o);
