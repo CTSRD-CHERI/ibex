@@ -467,14 +467,13 @@ module ibex_cheri_alu #(
               cmp_lt_a_i = {1'b0, b_getBase_o};
               cmp_lt_b_i = {1'b0, a_getBase_o};
 
-              exceptions_a_o.tag_violation              = exceptions_a.tag_violation;
-              exceptions_a_o.seal_violation             = exceptions_a.seal_violation;
-              exceptions_a_o.length_violation           = (cmp_lt_res_o)
-                                                        | (cmp_gt_res_o);
-              exceptions_a_o.software_defined_violation = (a_getPerms_o & b_getPerms_o) != b_getPerms_o;
-
-              // Top is 1 bit longer than base (ie 33 bit when XLEN is 32)
-              exceptions_b_o.length_violation = {1'b0, b_getBase_o} > b_getTop_o;
+              result_o[CheriCapWidth-1] = result_o[CheriCapWidth-1]
+                                        & a_isValidCap_o
+                                        & !a_isSealed_o
+                                        & !cmp_lt_res_o
+                                        & !cmp_gt_res_o
+                                        & ((a_getPerms_o & b_getPerms_o) == b_getPerms_o)
+                                        & ({1'b0, b_getBase_o} <= b_getTop_o);
 
               if (Verbosity) begin
                 $display("cbuildcap output: %h   exceptions: %h   exceptions_b: %h", result_o, exceptions_a_o, exceptions_b_o);
