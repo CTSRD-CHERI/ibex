@@ -350,8 +350,7 @@ module ibex_cheri_alu #(
               result_o         = a_setPerms_o;
               wrote_capability = 1'b1;
 
-              exceptions_a_o.tag_violation  = exceptions_a.tag_violation;
-              exceptions_a_o.seal_violation = exceptions_a.seal_violation;
+              result_o[CheriCapWidth-1] = result_o[CheriCapWidth-1] & !a_isSealed_o;
 
               if (Verbosity) begin
                 $display("candperm output: %h   exceptions: %h   exceptions_b: %h", result_o, exceptions_a_o, exceptions_b_o);
@@ -364,7 +363,7 @@ module ibex_cheri_alu #(
               result_o         = a_setFlags_o;
               wrote_capability = 1'b1;
 
-              exceptions_a_o.seal_violation = exceptions_a.seal_violation;
+              result_o[CheriCapWidth-1] = result_o[CheriCapWidth-1] & !a_isSealed_o;
 
               if (Verbosity) begin
                 $display("csetflags output: %h   exceptions: %h   exceptions_b: %h", result_o, exceptions_a_o, exceptions_b_o);
