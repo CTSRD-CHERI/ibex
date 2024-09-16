@@ -167,12 +167,12 @@ module ibex_cheri_alu #(
   logic                     b_setValidCap_i;
   logic [CheriCapWidth-1:0] b_setValidCap_o;
 
-  logic [   IntWidth-1:0] a_setAddr_i;
   // This signal is used as the input for another module inside the
   // always_comb block, which leads Verilator to output UNOPTFLAT and
   // IMPERFECTSCH warnings; silence these here
   // verilator lint_off UNOPTFLAT
   // verilator lint_off IMPERFECTSCH
+  logic [   IntWidth-1:0] a_setAddr_i;
   logic [CheriCapWidth:0] a_setAddr_o;
   // verilator lint_on IMPERFECTSCH
   // verilator lint_on UNOPTFLAT
@@ -302,15 +302,14 @@ module ibex_cheri_alu #(
               cmp_lt_a_i = {1'b0, b_getAddr_o};
               cmp_lt_b_i = b_getTop_o;
 
-              exceptions_a_o.tag_violation  = exceptions_a.tag_violation;
-              exceptions_a_o.seal_violation = exceptions_a.seal_violation;
-
-              exceptions_b_o.tag_violation         = exceptions_b.tag_violation;
-              exceptions_b_o.seal_violation        = exceptions_b.seal_violation;
-              exceptions_b_o.length_violation      = exceptions_b.length_violation
-                                                   | (~cmp_lt_res_o)
-                                                   | (cmp_gt_res_o);
-              exceptions_b_o.permit_seal_violation = exceptions_b.permit_seal_violation;
+              result_o[CheriCapWidth-1] = result_o[CheriCapWidth-1]
+                                        & !a_isSealed_o
+                                        & b_isValidCap_o
+                                        & !b_isSealed_o
+                                        & b_getPerms_o[PermitSealIndex]
+                                        & cmp_lt_res_o
+                                        & !cmp_gt_res_o
+                                        & (b_getAddr_o >= b_getBase_o);
 
               if (Verbosity) begin
                 $display("cseal output: %h   exceptions: %h   exceptions_b: %h", result_o, exceptions_a_o, exceptions_b_o);
@@ -329,15 +328,14 @@ module ibex_cheri_alu #(
               result_o         = a_setKind_o;
               wrote_capability = 1'b1;
 
-              exceptions_a_o.tag_violation  = exceptions_a.tag_violation;
-              exceptions_a_o.seal_violation = !a_isSealed_o;
-
-              exceptions_b_o.tag_violation           = exceptions_b.tag_violation;
-              exceptions_b_o.seal_violation          = b_isSealed_o;
-              exceptions_b_o.type_violation          = b_getAddr_o != {{(IntWidth-OTypeWidth){1'b0}}, a_getOType_o};
-              exceptions_b_o.permit_unseal_violation = exceptions_b.permit_unseal_violation;
-              exceptions_b_o.length_violation        = exceptions_b.length_violation
-                                                     | cmp_lt_res_o;
+              result_o[CheriCapWidth-1] = result_o[CheriCapWidth-1]
+                                        & b_isValidCap_o
+                                        & a_isSealedWithType_o
+                                        & !b_isSealed_o
+                                        & (b_getAddr_o == {{(IntWidth-OTypeWidth){1'b0}}, a_getOType_o})
+                                        & b_getPerms_o[PermitUnsealIndex]
+                                        & !cmp_lt_res_o
+                                        & (b_getAddr_o > b_getBase_o);
 
               if (Verbosity) begin
                 $display("cunseal output: %h   exceptions: %h   exceptions_b: %h", result_o, exceptions_a_o, exceptions_b_o);
@@ -483,22 +481,15 @@ module ibex_cheri_alu #(
             C_COPY_TYPE: begin
               // unsealed, sentry and reserved otypes are not "software" types
               logic b_has_software_type = b_isSealedWithType_o;
-              a_setAddr_i = {{(IntWidth-OTypeWidth){1'b0}}, b_getOType_o};
+              a_setAddr_i = {{(IntWidth-OTypeWidth){!b_has_software_type}}, b_getOType_o};
 
-              wrote_capability = b_has_software_type;
-              result_o         = b_has_software_type ? a_setAddr_o[CheriCapWidth-1:0]
-                                                     // sign-extend the otype
-                                                     : {{(CheriCapWidth-OTypeWidth){b_getOType_o[OTypeWidth-1]}}, b_getOType_o};
+              wrote_capability = 1'b1;
+              result_o         = a_setAddr_o[CheriCapWidth-1:0];
 
-              cmp_lt_a_i = {{(IntWidth+1-OTypeWidth){1'b0}}, b_getOType_o};
-              cmp_lt_b_i = {1'b0, a_getBase_o};
-
-              exceptions_a_o.tag_violation    = exceptions_a.tag_violation;
-              exceptions_a_o.seal_violation   = exceptions_a.seal_violation;
-              // Not the same as a "common" length violation so we can't use the common case
-              exceptions_a_o.length_violation = b_has_software_type
-                                              & (cmp_lt_res_o
-                                                |{{(IntWidth-OTypeWidth+1){1'b0}}, b_getOType_o} >= a_getTop_o);
+              result_o[CheriCapWidth-1] = result_o[CheriCapWidth-1]
+                                        & !a_isSealed_o
+                                        & a_setAddr_o[CheriCapWidth]
+                                        & b_has_software_type;
 
               if (Verbosity) begin
                 $display("ccopytype output: %h   exceptions: %h   exceptions_b: %h", result_o, exceptions_a_o, exceptions_b_o);
@@ -506,25 +497,35 @@ module ibex_cheri_alu #(
             end
 
             C_C_SEAL: begin
+              logic passthrough;
+
               // whether B passes the conditions to seal
-              logic b_is_ok   = b_isValidCap_o & b_isInBounds_o & b_getAddr_o != {IntWidth{1'b1}};
-              logic a_is_ok   = a_isValidCap_o & ~a_isSealed_o;
               a_setKind_cap_i = operand_a_i;
               a_setKind_i     = b_getAddr_o[KindWidth-1:0];
-
-              // if both are OK then save the new value, otherwise save the old value
-              result_o         = b_is_ok & a_is_ok ? a_setKind_o : operand_a_i;
-              wrote_capability = 1'b1;
-
-              exceptions_a_o.tag_violation = exceptions_a.tag_violation;
 
               cmp_gt_a_i = {1'b0, b_getAddr_o};
               cmp_gt_b_i = {1'b0, CheriMaxOType};
 
-              exceptions_b_o.seal_violation        = a_is_ok && b_is_ok && exceptions_b.seal_violation;
-              exceptions_b_o.permit_seal_violation = a_is_ok && b_is_ok && exceptions_b.permit_seal_violation;
-              exceptions_b_o.length_violation      = a_is_ok && b_is_ok && (exceptions_b.length_violation
-                                                                           |cmp_gt_res_o);
+              cmp_lt_a_i = {1'b0, b_getAddr_o};
+              cmp_lt_b_i = b_getTop_o;
+
+              passthrough = !b_isValidCap_o
+                          | a_isSealed_o
+                          | (a_getAddr_o < a_getBase_o)
+                          | !cmp_lt_res_o
+                          | (b_getAddr_o != {IntWidth{1'b1}});
+
+              // if both are OK then save the new value, otherwise save the old value
+              result_o         = !passthrough ? a_setKind_o : operand_a_i;
+              wrote_capability = 1'b1;
+
+              result_o[CheriCapWidth-1] = result_o[CheriCapWidth-1]
+                                        & ( passthrough ? 1'b1
+                                                        : ( !b_isSealed_o
+                                                          & b_getPerms_o[PermitSealIndex]
+                                                          & cmp_gt_res_o
+                                                          )
+                                          );
 
               if (Verbosity) begin
                 $display("ccseal output: %h   exceptions: %h   exceptions_b: %h", result_o, exceptions_a_o, exceptions_b_o);
@@ -759,9 +760,8 @@ module ibex_cheri_alu #(
                   result_o         = a_setKind_o;
                   wrote_capability = 1'b1;
 
-                  exceptions_a_o.tag_violation            = exceptions_a.tag_violation;
-                  exceptions_a_o.seal_violation           = exceptions_a.seal_violation;
-                  exceptions_a_o.permit_execute_violation = exceptions_a.permit_execute_violation;
+                  result_o[CheriCapWidth-1] = result_o[CheriCapWidth-1]
+                                            & !a_isSealed_o;
                 end
 
                 C_ROUND_REP_LEN: begin
