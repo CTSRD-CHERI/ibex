@@ -1040,13 +1040,6 @@ module ibex_controller #(
       cheri_exc_cause_o   = CAUSE_TYPE_VIOLATION;
       cheri_exc_reg_sel_o = REG_B;
 
-    end else if (cheri_exceptions_a_ex_i.permit_seal_violation) begin
-      cheri_exc_cause_o   = CAUSE_PERMIT_SEAL_VIOLATION;
-      cheri_exc_reg_sel_o = REG_A;
-    end else if (cheri_exceptions_b_ex_i.permit_seal_violation) begin
-      cheri_exc_cause_o   = CAUSE_PERMIT_SEAL_VIOLATION;
-      cheri_exc_reg_sel_o = REG_B;
-
     end else if (cheri_exceptions_a_ex_i.permit_cinvoke_violation) begin
       cheri_exc_cause_o   = CAUSE_PERMIT_CINVOKE_VIOLATION;
       cheri_exc_reg_sel_o = REG_A;
@@ -1059,13 +1052,6 @@ module ibex_controller #(
       cheri_exc_reg_sel_o = REG_A;
     end else if (cheri_exceptions_b_ex_i.access_cinvoke_idc_violation) begin
       cheri_exc_cause_o   = CAUSE_PERMIT_ACCESS_CINVOKE_IDC_VIOLATION;
-      cheri_exc_reg_sel_o = REG_B;
-
-    end else if (cheri_exceptions_a_ex_i.permit_unseal_violation) begin
-      cheri_exc_cause_o   = CAUSE_PERMIT_UNSEAL_VIOLATION;
-      cheri_exc_reg_sel_o = REG_A;
-    end else if (cheri_exceptions_b_ex_i.permit_unseal_violation) begin
-      cheri_exc_cause_o   = CAUSE_PERMIT_UNSEAL_VIOLATION;
       cheri_exc_reg_sel_o = REG_B;
 
     end else if (cheri_exceptions_a_ex_i.permit_set_cid_violation) begin
@@ -1140,13 +1126,6 @@ module ibex_controller #(
       cheri_exc_reg_sel_o = REG_A;
     end else if (cheri_exceptions_b_ex_i.unaligned_base_violation) begin
       cheri_exc_cause_o   = CAUSE_UNALIGNED_BASE_VIOLATION;
-      cheri_exc_reg_sel_o = REG_B;
-
-    end else if (cheri_exceptions_a_ex_i.inexact_bounds_violation) begin
-      cheri_exc_cause_o   = CAUSE_REPRESENTABILITY_VIOLATION;
-      cheri_exc_reg_sel_o = REG_A;
-    end else if (cheri_exceptions_b_ex_i.inexact_bounds_violation) begin
-      cheri_exc_cause_o   = CAUSE_REPRESENTABILITY_VIOLATION;
       cheri_exc_reg_sel_o = REG_B;
 
     end else if (cheri_exceptions_a_ex_i.software_defined_violation) begin

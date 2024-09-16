@@ -292,10 +292,8 @@ package ibex_pkg;
     logic tag_violation;
     logic seal_violation;
     logic type_violation;
-    logic permit_seal_violation;
     logic permit_cinvoke_violation;
     logic access_cinvoke_idc_violation;
-    logic permit_unseal_violation;
     logic permit_set_cid_violation;
     logic permit_execute_violation;
     logic permit_load_violation;
@@ -305,7 +303,6 @@ package ibex_pkg;
     logic permit_store_local_capability_violation;
     logic global_violation;
     logic length_violation;
-    logic inexact_bounds_violation;
     logic unaligned_base_violation;
     logic software_defined_violation;
   } cheri_exc_t;
@@ -548,7 +545,7 @@ package ibex_pkg;
     // 'h05...'h07 reserved
     CAUSE_SOFTWARE_DEFINED_PERMISSION_VIOLATION    = 5'h08,
     // 'h09 deprecated in RISC-V
-    CAUSE_REPRESENTABILITY_VIOLATION               = 5'h0A,
+    // 'h0A deprecated in RISC-V (inexact bounds)
     CAUSE_UNALIGNED_BASE_VIOLATION                 = 5'h0B,
     // 'h0C..'h0F reserved
     CAUSE_GLOBAL_VIOLATION                         = 5'h10,
@@ -558,11 +555,11 @@ package ibex_pkg;
     CAUSE_PERMIT_LOAD_CAPABILITY_VIOLATION         = 5'h14,
     CAUSE_PERMIT_STORE_CAPABILITY_VIOLATION        = 5'h15,
     CAUSE_PERMIT_STORE_LOCAL_CAPABILITY_VIOLATION  = 5'h16,
-    CAUSE_PERMIT_SEAL_VIOLATION                    = 5'h17,
+    // 'h17 deprecated in RISC-V (permit seal)
     CAUSE_PERMIT_ACCESS_SYSTEM_REGISTERS_VIOLATION = 5'h18,
     CAUSE_PERMIT_CINVOKE_VIOLATION                 = 5'h19,
     CAUSE_PERMIT_ACCESS_CINVOKE_IDC_VIOLATION      = 5'h1A,
-    CAUSE_PERMIT_UNSEAL_VIOLATION                  = 5'h1B,
+    // 'h1B deprecated in RISC-V (permit unseal)
     CAUSE_PERMIT_SET_CID_VIOLATION                 = 5'h1C
     // 'h1C..'h1F reserved
   } c_exc_cause_e;

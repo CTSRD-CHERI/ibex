@@ -1011,17 +1011,8 @@ module_wrap64_getRepresentableLength module_getRepresentableLength_a (
     if (a_getAddr_o < a_getBase_o)
       exceptions_a.length_violation = 1'b1;
 
-    if (b_getAddr_o < b_getBase_o)
-      exceptions_b.length_violation = 1'b1;
-
     if (a_getKind_o != b_getKind_o)
       exceptions_a.type_violation = 1'b1;
-
-    if (!b_getPerms_o[PermitUnsealIndex])
-      exceptions_b.permit_unseal_violation = 1'b1;
-
-    if (!b_getPerms_o[PermitSealIndex])
-      exceptions_b.permit_seal_violation = 1'b1;
 
     if (!a_getPerms_o[PermitExecuteIndex])
       exceptions_a.permit_execute_violation = 1'b1;
