@@ -374,6 +374,8 @@ package ibex_tracer_pkg;
       {7'b1111111, 5'b01101, 5'h?, 3'b000, 5'h?, {OPCODE_CHERI}};
   parameter logic [31:0] INSN_CGETADDR =
       {7'b1111111, 5'b01111, 5'h?, 3'b000, 5'h?, {OPCODE_CHERI}};
+  parameter logic [31:0] INSN_CGETTOP =
+      {7'b1111111, 5'b11000, 5'h?, 3'b000, 5'h?, {OPCODE_CHERI}};
   parameter logic [31:0] INSN_CSEALENTRY =
       {7'b1111111, 5'b10001, 5'h?, 3'b000, 5'h?, {OPCODE_CHERI}};
 

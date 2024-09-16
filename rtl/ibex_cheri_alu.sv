@@ -753,6 +753,15 @@ module ibex_cheri_alu #(
                   end
                 end
 
+                C_GET_TOP: begin
+                  result_o[IntWidth-1:0] = a_getTop_o[IntWidth] ? {IntWidth{1'b1}}
+                                                                : a_getTop_o[IntWidth-1:0];
+
+                  if (Verbosity) begin
+                    $display("cgettop output: %h   exceptions: %h   exceptions_b: %h", result_o, exceptions_a_o, exceptions_b_o);
+                  end
+                end
+
                 C_SEAL_ENTRY: begin
                   a_setKind_cap_i = operand_a_i;
                   a_setKind_i     = 7'h1E;

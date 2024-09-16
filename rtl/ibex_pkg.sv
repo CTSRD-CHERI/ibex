@@ -250,6 +250,7 @@ package ibex_pkg;
     C_GET_ADDR       = 5'h0F,
     C_FP_CLEAR       = 5'h10,
     C_SEAL_ENTRY     = 5'h11,
+    C_GET_TOP        = 5'h18,
     ONE_OP           = 5'h1F    //unused
   } cheri_s_a_d_funct5_e;
 
