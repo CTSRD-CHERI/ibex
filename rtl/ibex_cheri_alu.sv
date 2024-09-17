@@ -515,7 +515,7 @@ module ibex_cheri_alu #(
                           | a_isSealed_o
                           | (a_getAddr_o < a_getBase_o)
                           | !cmp_lt_res_o
-                          | (b_getAddr_o != {IntWidth{1'b1}});
+                          | (b_getAddr_o == {IntWidth{1'b1}});
 
               // if both are OK then save the new value, otherwise save the old value
               result_o         = !passthrough ? a_setKind_o : operand_a_i;
