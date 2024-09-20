@@ -525,7 +525,7 @@ module ibex_cheri_alu #(
                                         & ( passthrough ? 1'b1
                                                         : ( !b_isSealed_o
                                                           & b_getPerms_o[PermitSealIndex]
-                                                          & cmp_gt_res_o
+                                                          & !cmp_gt_res_o
                                                           )
                                           );
 
