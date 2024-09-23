@@ -336,6 +336,8 @@ package ibex_tracer_pkg;
       {7'b0010011, 10'h?, 3'b000, 5'h?, {OPCODE_CHERI}};
   parameter logic [31:0] INSN_CAPSUB =
       {7'b0010100, 10'h?, 3'b000, 5'h?, {OPCODE_CHERI}};
+  parameter logic [31:0] INSN_CSETHIGH =
+      {7'b0010110, 10'h?, 3'b000, 5'h?, {OPCODE_CHERI}};
   parameter logic [31:0] INSN_CBUILDCAP =
       {7'b0011101, 10'h?, 3'b000, 5'h?, {OPCODE_CHERI}};
   parameter logic [31:0] INSN_CCOPYTYPE =

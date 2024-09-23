@@ -177,6 +177,9 @@ module ibex_cheri_alu #(
   // verilator lint_on IMPERFECTSCH
   // verilator lint_on UNOPTFLAT
 
+  logic [IntWidth+IntWidth+1-1:0] fromMem_i;
+  logic [CheriCapWidth-1:0] fromMem_o;
+
   logic [   IntWidth-1:0] b_setAddr_i;
   logic [CheriCapWidth:0] b_setAddr_o;
 
@@ -393,6 +396,20 @@ module ibex_cheri_alu #(
 
               if (Verbosity) begin
                 $display("csetaddr output: %h   exceptions: %h   exceptions_b: %h", result_o, exceptions_a_o, exceptions_b_o);
+              end
+            end
+
+            C_SET_HIGH: begin
+              fromMem_i = {1'b0, b_getAddr_o, a_getAddr_o};
+
+              result_o         = fromMem_o;
+              wrote_capability = 1'b1;
+
+              // Always clear tag (redundant)
+              result_o[CheriCapWidth-1] = 1'b0;
+
+              if (Verbosity) begin
+                $display("csethigh output: %h   exceptions: %h   exceptions_b: %h", result_o, exceptions_a_o, exceptions_b_o);
               end
             end
 
@@ -1006,6 +1023,10 @@ module_wrap64_getRepresentableLength module_getRepresentableLength_a (
 module_wrap64_toMem module_toMem_a (
       .wrap64_toMem_cap (operand_a_i),
       .wrap64_toMem     (a_toMem_o));
+
+module_wrap64_fromMem module_fromMem (
+      .wrap64_fromMem_mem_cap (fromMem_i),
+      .wrap64_fromMem         (fromMem_o));
 
 
 

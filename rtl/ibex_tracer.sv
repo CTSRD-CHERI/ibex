@@ -1057,6 +1057,7 @@ module ibex_tracer (
         INSN_CTOPTR:          decode_cheri_int_from_cap_cap("ctoptr");
         INSN_CFROMPTR:        decode_cheri_cap_from_cap_int("cfromptr");
         INSN_CAPSUB:          decode_cheri_int_from_cap_cap("csub");
+        INSN_CSETHIGH:        decode_cheri_cap_from_cap_int("csethigh");
         INSN_CBUILDCAP:       decode_cheri_cap_from_cap_cap("cbuildcap");
         INSN_CCOPYTYPE:       decode_cheri_cap_from_cap_cap("ccopytype");
         INSN_CTESTSUBSET:     decode_cheri_int_from_cap_cap("ctestsubset");

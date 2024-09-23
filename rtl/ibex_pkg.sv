@@ -219,6 +219,7 @@ package ibex_pkg;
     C_TO_PTR           = 7'h12,
     C_FROM_PTR         = 7'h13,
     C_SUB              = 7'h14,
+    C_SET_HIGH         = 7'h16,
     C_BUILD_CAP        = 7'h1D,
     C_COPY_TYPE        = 7'h1E,
     C_C_SEAL           = 7'h1F,
