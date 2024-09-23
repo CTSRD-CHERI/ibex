@@ -337,7 +337,7 @@ module ibex_cheri_alu #(
                                         & (b_getAddr_o == {{(IntWidth-OTypeWidth){1'b0}}, a_getOType_o})
                                         & b_getPerms_o[PermitUnsealIndex]
                                         & !cmp_lt_res_o
-                                        & (b_getAddr_o > b_getBase_o);
+                                        & (b_getAddr_o >= b_getBase_o);
 
               if (Verbosity) begin
                 $display("cunseal output: %h   exceptions: %h   exceptions_b: %h", result_o, exceptions_a_o, exceptions_b_o);
