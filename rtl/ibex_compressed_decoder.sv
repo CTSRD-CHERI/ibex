@@ -17,6 +17,7 @@ module ibex_compressed_decoder (
   input  logic        clk_i,
   input  logic        rst_ni,
   input  logic        valid_i,
+  input  logic        cap_mode_i,
   input  logic [31:0] instr_i,
   output logic [31:0] instr_o,
   output logic        is_compressed_o,
@@ -63,8 +64,17 @@ module ibex_compressed_decoder (
                        2'b00, {OPCODE_STORE}};
           end
 
+          3'b011: begin
+            // c.clc -> lc cd', imm(cs1')
+            instr_o = {4'b0, instr_i[6:5], instr_i[12:10], 3'b0,
+                       2'b01, instr_i[9:7],
+                       3'b011,
+                       2'b01, instr_i[4:2],
+                       {OPCODE_LOAD}};
+            illegal_instr_o = !cap_mode_i;
+          end
+
           3'b001,
-          3'b011,
           3'b100,
           3'b101,
           3'b111: begin

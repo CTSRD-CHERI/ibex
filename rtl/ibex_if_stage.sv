@@ -158,6 +158,8 @@ module ibex_if_stage import ibex_pkg::*; #(
 
   logic              instr_err, instr_intg_err;
 
+  logic              pcc_getFlags_o;
+
   // instruction-specific exceptions
   cheri_instr_exc_t  instr_cheri_instr_exc;
 
@@ -581,6 +583,7 @@ module ibex_if_stage import ibex_pkg::*; #(
     .rst_ni         (rst_ni),
     .valid_i        (fetch_valid & ~fetch_err & ~(|fetch_cheri_err)),
     .instr_i        (if_instr_rdata),
+    .cap_mode_i     (pcc_getFlags_o),
     .instr_o        (instr_decompressed),
     .is_compressed_o(instr_is_compressed),
     .illegal_instr_o(illegal_c_insn)
@@ -902,6 +905,9 @@ module ibex_if_stage import ibex_pkg::*; #(
   module_wrap64_setKind   mepcc_setKind  (scr_mepcc_i, 7'h0F, mepcc_setKind_o);
   module_wrap64_getKind   mepcc_getKind  (scr_mepcc_i, mepcc_getKind_o);
   module_wrap64_setKind   target_setKind (branch_target_cap_ex_i, 7'h0F, branch_target_setKind_o);
+
+  // PCC flag needed for compressed decode
+  module_wrap64_getFlags pcc_getFlags (pcc_q, pcc_getFlags_o);
 
   ////////////////
   // Assertions //
