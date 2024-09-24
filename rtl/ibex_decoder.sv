@@ -406,6 +406,9 @@ module ibex_decoder #(
           end
           2'b11: begin
             data_type_o      = 2'b11; // load cap
+            if (instr[14]) begin
+              illegal_insn = 1'b1;    // ldu does not exist
+            end
             mem_cap_access_o = 1'b1;
             add_auth_addr_o  = 1'b1;
           end
