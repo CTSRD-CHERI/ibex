@@ -284,9 +284,19 @@ module ibex_compressed_decoder (
             illegal_instr_o = !cap_mode_i || instr_i[11:7] == 5'b0;
           end
 
-          3'b001,
-          3'b101,
           3'b111: begin
+            // c.cscsp -> sc cs2, imm(csp)
+            instr_o = {3'b0, instr_i[9:7], instr_i[12],
+                       instr_i[6:2],
+                       5'b00010, // sp
+                       3'b011,
+                       instr_i[11:10], 3'b0,
+                       {OPCODE_STORE}};
+            illegal_instr_o = !cap_mode_i;
+          end
+
+          3'b001,
+          3'b101: begin
             illegal_instr_o = 1'b1;
           end
 
