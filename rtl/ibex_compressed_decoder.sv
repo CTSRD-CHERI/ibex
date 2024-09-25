@@ -74,10 +74,20 @@ module ibex_compressed_decoder (
             illegal_instr_o = !cap_mode_i;
           end
 
+          3'b111: begin
+            // c.csc -> sc cs2', imm(cs1')
+            instr_o = {4'b0, instr_i[6:5], instr_i[12],
+                       2'b01, instr_i[4:2],
+                       2'b01, instr_i[9:7],
+                       3'b011,
+                       instr_i[11:10], 3'b0,
+                       {OPCODE_STORE}};
+            illegal_instr_o = !cap_mode_i;
+          end
+
           3'b001,
           3'b100,
-          3'b101,
-          3'b111: begin
+          3'b101: begin
             illegal_instr_o = 1'b1;
           end
 
