@@ -133,8 +133,13 @@ module ibex_compressed_decoder (
 
             if (instr_i[11:7] == 5'h02) begin
               // c.addi16sp -> addi x2, x2, nzimm
-              instr_o = {{3 {instr_i[12]}}, instr_i[4:3], instr_i[5], instr_i[2],
-                         instr_i[6], 4'b0, 5'h02, 3'b000, 5'h02, {OPCODE_OP_IMM}};
+              if (cap_mode_i) begin
+                instr_o = {{3 {instr_i[12]}}, instr_i[4:3], instr_i[5], instr_i[2],
+                           instr_i[6], 4'b0, 5'h02, 3'b001, 5'h02, {OPCODE_CHERI}};
+              end else begin
+                instr_o = {{3 {instr_i[12]}}, instr_i[4:3], instr_i[5], instr_i[2],
+                           instr_i[6], 4'b0, 5'h02, 3'b000, 5'h02, {OPCODE_OP_IMM}};
+              end
             end
 
             if ({instr_i[12], instr_i[6:2]} == 6'b0) illegal_instr_o = 1'b1;
