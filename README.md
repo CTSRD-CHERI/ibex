@@ -1,4 +1,7 @@
-[![Build Status](https://dev.azure.com/lowrisc/ibex/_apis/build/status/lowRISC.ibex?branchName=master)](https://dev.azure.com/lowrisc/ibex/_build/latest?definitionId=3&branchName=master)
+# Ibex CHERI modifications
+
+The CHERI modifications made to the core are experimental and not verified to the lowRISC standard.
+Expect there to be bugs, and do get in touch if you have any questions!
 
 # Ibex RISC-V Core
 
