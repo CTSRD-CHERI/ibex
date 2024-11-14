@@ -840,7 +840,7 @@ module ibex_cs_registers #(
           scr_mtcc_en = getBaseAlignment_o == 2'b0;
 
           // also write MTVEC
-          mtvec_en = getBaseAlignment_o == 2'b0;
+          mtvec_en = 1'b1;
           mtvec_d  = {getAddr_o[31:2], 2'b01};
         end
         SCR_MTDC: begin
