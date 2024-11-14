@@ -1121,13 +1121,6 @@ module ibex_controller #(
     end else if (cheri_exceptions_if_i.length_violation) begin
       cheri_exc_cause_o   = CAUSE_LENGTH_VIOLATION;
 
-    end else if (cheri_exceptions_a_ex_i.unaligned_base_violation) begin
-      cheri_exc_cause_o   = CAUSE_UNALIGNED_BASE_VIOLATION;
-      cheri_exc_reg_sel_o = REG_A;
-    end else if (cheri_exceptions_b_ex_i.unaligned_base_violation) begin
-      cheri_exc_cause_o   = CAUSE_UNALIGNED_BASE_VIOLATION;
-      cheri_exc_reg_sel_o = REG_B;
-
     end else if (cheri_exceptions_a_ex_i.software_defined_violation) begin
       cheri_exc_cause_o   = CAUSE_SOFTWARE_DEFINED_PERMISSION_VIOLATION;
       cheri_exc_reg_sel_o = REG_A;

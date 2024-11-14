@@ -59,7 +59,6 @@ module ibex_load_store_unit #(
 
   input  logic [31:0]  adder_result_ex_i,    // address computed in ALU          -> from ID/EX
   input  logic [31:0]  auth_addr_i,          // the address of the authorizing capability
-  input  logic         add_auth_addr_i,      // whether to add the address of the authorizing capability
 
   output logic         addr_incr_req_o,      // request address increment for
                                               // misaligned accesses              -> to ID/EX
@@ -89,7 +88,7 @@ module ibex_load_store_unit #(
 );
   import ibex_pkg::*;
 
-  logic [31:0]  data_addr, data_addr_int;
+  logic [31:0]  data_addr;
   logic [31:0]  data_addr_w_aligned;
   logic [31:0]  addr_last_q, addr_last_d;
 
@@ -139,8 +138,7 @@ module ibex_load_store_unit #(
 
   ls_fsm_e ls_fsm_cs, ls_fsm_ns;
 
-  assign data_addr_int = add_auth_addr_i ? adder_result_ex_i + auth_addr_i : adder_result_ex_i;
-  assign data_addr     = data_addr_int;
+  assign data_addr     = adder_result_ex_i;
   assign data_offset   = data_addr[1:0];
 
   ///////////////////

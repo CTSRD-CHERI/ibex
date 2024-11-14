@@ -306,7 +306,6 @@ package ibex_pkg;
     logic permit_store_local_capability_violation;
     logic global_violation;
     logic length_violation;
-    logic unaligned_base_violation;
     logic software_defined_violation;
   } cheri_exc_t;
 
@@ -549,7 +548,7 @@ package ibex_pkg;
     CAUSE_SOFTWARE_DEFINED_PERMISSION_VIOLATION    = 5'h08,
     // 'h09 deprecated in RISC-V
     // 'h0A deprecated in RISC-V (inexact bounds)
-    CAUSE_UNALIGNED_BASE_VIOLATION                 = 5'h0B,
+    // 'h0B deprecated (unaligned base)
     // 'h0C..'h0F reserved
     CAUSE_GLOBAL_VIOLATION                         = 5'h10,
     CAUSE_PERMIT_EXECUTE_VIOLATION                 = 5'h11,

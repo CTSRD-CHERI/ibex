@@ -95,14 +95,6 @@ module ibex_decoder #(
   input ibex_pkg::priv_lvl_e              priv_mode_i,
   /* verilator lint_on UNUSED */
 
-  // whether the offset for this memory access should be relative to the
-  // capability base or the capability address
-  // for DDC-relative CHERI-added (non-RISC-V) loads and stores, we need to
-  // add in the address of DDC
-  // for non-DDC-relative accesses, the address is already factored in within
-  // the ALU
-  output logic                            add_auth_addr_o,
-
   // CHERI operand selection & enable
   output ibex_pkg::c_op_a_sel_e           cheri_op_a_mux_sel_o,
   output ibex_pkg::c_op_b_sel_e           cheri_op_b_mux_sel_o,
@@ -261,7 +253,6 @@ module ibex_decoder #(
     multdiv_operator_o    = MD_OP_MULL;
     multdiv_signed_mode_o = 2'b00;
 
-    add_auth_addr_o        = 1'b0;
     mem_ddc_relative_o     = 1'b0;
 
     rf_wdata_sel_o        = RF_WD_EX;
@@ -364,7 +355,6 @@ module ibex_decoder #(
         data_we_o          = 1'b1;
 
         mem_ddc_relative_o = !cap_mode_i;
-        add_auth_addr_o    = 1'b1;
 
         if (instr[14]) begin
           illegal_insn = 1'b1;
@@ -378,7 +368,6 @@ module ibex_decoder #(
           2'b11: begin
             data_type_o         = 2'b11; // store cap
             mem_cap_access_o    = 1'b1;
-            add_auth_addr_o     = 1'b1;
           end
         endcase
       end
@@ -389,7 +378,6 @@ module ibex_decoder #(
         data_type_o         = 2'b00;
 
         mem_ddc_relative_o  = !cap_mode_i;
-        add_auth_addr_o     = 1'b1;
 
         // sign/zero extension
         data_sign_extension_o = ~instr[14];
@@ -410,7 +398,6 @@ module ibex_decoder #(
               illegal_insn = 1'b1;    // ldu does not exist
             end
             mem_cap_access_o = 1'b1;
-            add_auth_addr_o  = 1'b1;
           end
         endcase
       end
@@ -787,7 +774,6 @@ module ibex_decoder #(
                 data_we_o          = 1'b1;
 
                 mem_ddc_relative_o = ~instr[10];
-                add_auth_addr_o    = ~instr[10];
                 // instr[11] should always be 0
                 // instr[9] indicates store quad - not allowed in RV32
                 if (instr[11] || instr[9]) begin
@@ -811,7 +797,6 @@ module ibex_decoder #(
                 data_type_o         = 2'b00;
 
                 mem_ddc_relative_o  = ~instr[23];
-                add_auth_addr_o     = ~instr[23];
 
                 // sign/zero extension
                 data_sign_extension_o = ~instr[22];
@@ -1091,7 +1076,7 @@ module ibex_decoder #(
       ////////////////
 
       OPCODE_STORE: begin
-        alu_op_a_mux_sel_o = cap_mode_i ? OP_A_IMM : OP_A_REG_A;
+        alu_op_a_mux_sel_o = OP_A_REG_A;
         alu_op_b_mux_sel_o = OP_B_REG_B;
         alu_operator_o     = ALU_ADD;
 
@@ -1103,7 +1088,7 @@ module ibex_decoder #(
       end
 
       OPCODE_LOAD: begin
-        alu_op_a_mux_sel_o  = cap_mode_i ? OP_A_IMM : OP_A_REG_A;
+        alu_op_a_mux_sel_o  = OP_A_REG_A;
 
         // offset from immediate
         alu_operator_o      = ALU_ADD;

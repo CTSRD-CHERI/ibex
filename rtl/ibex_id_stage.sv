@@ -157,7 +157,6 @@ module ibex_id_stage #(
   output logic                      lsu_wcap_o,
   output logic [CheriCapWidth-1:0]  lsu_mem_auth_cap_o, // Authorizing capability for memory accesses
   output logic [31:0]               lsu_auth_addr_o,
-  output logic                      lsu_add_auth_addr_o,
 
   input  logic                      lsu_req_done_i, // Data req to LSU is complete and
                                                     // instruction can move to writeback
@@ -629,8 +628,6 @@ module ibex_id_stage #(
 
     .cap_mode_i (pcc_getFlags_o),
     .priv_mode_i(priv_mode_i),
-
-    .add_auth_addr_o(lsu_add_auth_addr_o),
 
     .cheri_op_a_mux_sel_o (cheri_op_a_mux_sel),
     .cheri_op_b_mux_sel_o (cheri_op_b_mux_sel),

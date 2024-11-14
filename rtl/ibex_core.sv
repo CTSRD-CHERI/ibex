@@ -357,7 +357,6 @@ module ibex_core import ibex_pkg::*; #(
   logic                     lsu_req_done;
   logic [CheriCapWidth-1:0] lsu_mem_auth_cap;
   logic [31:0]              lsu_auth_addr;
-  logic                     lsu_add_auth_addr;
   /* verilator lint_off UNUSED */
   logic                     lsu_data_first_access;
   /* verilator lint_on UNUSED */
@@ -742,7 +741,6 @@ module ibex_core import ibex_pkg::*; #(
     .lsu_req_done_i (lsu_req_done),  // from load store unit
     .lsu_mem_auth_cap_o(lsu_mem_auth_cap), // to CHERI checker
     .lsu_auth_addr_o    (lsu_auth_addr),
-    .lsu_add_auth_addr_o(lsu_add_auth_addr),
 
     .lsu_addr_incr_req_i(lsu_addr_incr_req),
     .lsu_addr_last_i    (lsu_addr_last),
@@ -927,7 +925,6 @@ module ibex_core import ibex_pkg::*; #(
 
     .adder_result_ex_i(alu_adder_result_ex),
     .auth_addr_i      (lsu_auth_addr),
-    .add_auth_addr_i  (lsu_add_auth_addr),
 
     .addr_incr_req_o(lsu_addr_incr_req),
     .addr_last_o    (lsu_addr_last),
@@ -1758,7 +1755,7 @@ module ibex_core import ibex_pkg::*; #(
   // Memory adddress/write data available first cycle of ld/st instruction from register read
   always_comb begin
     if (instr_first_cycle_id) begin
-      rvfi_mem_addr_d  = alu_adder_result_ex + (lsu_add_auth_addr ? lsu_auth_addr : '0);
+      rvfi_mem_addr_d  = alu_adder_result_ex;
       rvfi_mem_wdata_d = rvfi_mem_mask_int == 8'b1111_1111 ? lsu_wdata_mem_cap[63:0]
                                                            : {32'h0, lsu_wdata_int};
     end else begin

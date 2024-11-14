@@ -246,7 +246,7 @@ module ibex_cheri_alu #(
       // The API does not explicitly state whether the base can be above the
       // top, or what the behaviour is in that case.
       cmp_gt_a_i = {1'b0, btalu_result_i[31:1], 1'b0} + 2;
-      cmp_gt_b_i = a_getLength_o;
+      cmp_gt_b_i = a_getTop_o;
       exceptions_a_o.length_violation = cmp_gt_res_o;
 
     end else begin
@@ -569,7 +569,7 @@ module ibex_cheri_alu #(
             end
 
             C_INVOKE: begin
-              logic [IntWidth-1:0] new_offset = {a_getOffset_o[IntWidth-1:1], 1'b0};
+              logic [IntWidth-1:0] new_addr = {a_getAddr_o[IntWidth-1:1], 1'b0};
               // second cycle operations (unseal capability b)
               // capability b is the data capability to be placed in register 31
               b_setKind_i = { {(KindWidth-OTypeWidth){1'b0}}, {OTypeWidth{1'b1}} }; // unseal capability b
@@ -578,12 +578,12 @@ module ibex_cheri_alu #(
               result_o         = b_setKind_o;
 
               // check if we can fetch a full instruction with the bounds on this capability
-              alu_operand_a_o = new_offset;
+              alu_operand_a_o = new_addr;
               alu_operand_b_o = instr_first_cycle_i ? 0 : 2;
               alu_operator_o  = ALU_ADD;
 
               cmp_gt_a_i = alu_result_i;
-              cmp_gt_b_i = a_getLength_o;
+              cmp_gt_b_i = a_getTop_o;
 
               exceptions_a_o.tag_violation            =  exceptions_a.tag_violation;
               // capability a SHOULD be sealed
@@ -592,7 +592,6 @@ module ibex_cheri_alu #(
               exceptions_a_o.permit_cinvoke_violation =  exceptions_a.permit_cinvoke_violation;
               exceptions_a_o.permit_execute_violation =  exceptions_a.permit_execute_violation;
               exceptions_a_o.length_violation         =  cmp_gt_res_o;
-              exceptions_a_o.unaligned_base_violation =  a_getBase_o[0];
 
               exceptions_b_o.tag_violation            =  exceptions_b.tag_violation;
               // capability b SHOULD be sealed
@@ -724,15 +723,15 @@ module ibex_cheri_alu #(
 
                   if (instr_first_cycle_i) begin
                     // calculate the target offset in the ALU for the IF stage
-                    alu_operand_a_o = a_getOffset_o;
+                    alu_operand_a_o = a_getAddr_o;
                     alu_operand_b_o = operand_b_int;
                     alu_operator_o  = ALU_ADD;
                   end else begin
-                    alu_operand_a_o = a_getOffset_o;
+                    alu_operand_a_o = a_getAddr_o;
                     alu_operand_b_o = operand_b_int;
                     alu_operator_o  = ALU_ADD;
-                    a_setOffset_i   = alu_result_i[IntWidth-1:0];
-                    a_setKind_cap_i = a_setOffset_o[CheriCapWidth-1:0];
+                    a_setAddr_i     = alu_result_i[IntWidth-1:0];
+                    a_setKind_cap_i = a_setAddr_o[CheriCapWidth-1:0];
                     a_setKind_i     = 7'h1E;
                     result_o        = a_setKind_o;
                   end
@@ -748,7 +747,7 @@ module ibex_cheri_alu #(
                                                                              : {1'b0, alu_result_i[31:1], 1'b0});
 
                     cmp_gt_a_i = alu_result_int;
-                    cmp_gt_b_i = a_getLength_o;
+                    cmp_gt_b_i = a_getTop_o;
 
                     exceptions_a_o.tag_violation            = exceptions_a.tag_violation;
                     // capabilities sealed as Sentries are allowed
@@ -758,7 +757,6 @@ module ibex_cheri_alu #(
                                                             | (a_getKind_o == 7'h1E & operand_b_int != 0);
                     exceptions_a_o.permit_execute_violation = exceptions_a.permit_execute_violation;
                     exceptions_a_o.length_violation         = cmp_gt_res_o;
-                    exceptions_a_o.unaligned_base_violation = a_getBase_o[0];
                     // we don't care about trying to throw the last exception since we do support
                     // compressed instructions
                   end

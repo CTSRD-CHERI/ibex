@@ -249,12 +249,12 @@ module ibex_cs_registers #(
   logic [CheriCapWidth-1:0] getBaseAlignment_cap_i;
   logic [1:0]               getBaseAlignment_o;
 
-  logic [CheriCapWidth-1:0] setOffset_cap_i;
-  logic [31:0]              setOffset_offset_i;
-  logic [CheriCapWidth:0]   setOffset_o;
+  logic [CheriCapWidth-1:0] setAddr_cap_i;
+  logic [31:0]              setAddr_addr_i;
+  logic [CheriCapWidth:0]   setAddr_o;
 
-  logic [CheriCapWidth-1:0] getOffset_cap_i;
-  logic [31:0]              getOffset_o;
+  logic [CheriCapWidth-1:0] getAddr_cap_i;
+  logic [31:0]              getAddr_o;
 
   logic [CheriCapWidth-1:0]  isSealed_cap_i;
   /* verilator lint_off UNUSED */
@@ -686,9 +686,9 @@ module ibex_cs_registers #(
 
     double_fault_seen_o = 1'b0;
 
-    getOffset_cap_i        = CheriNullCap;
-    setOffset_cap_i        = CheriNullCap;
-    setOffset_offset_i     = 0;
+    getAddr_cap_i          = CheriNullCap;
+    setAddr_cap_i          = CheriNullCap;
+    setAddr_addr_i         = 0;
     getBaseAlignment_cap_i = CheriNullCap;
     isSealed_cap_i         = CheriNullCap;
 
@@ -721,11 +721,11 @@ module ibex_cs_registers #(
             mepc_en = 1'b1;
             scr_mepcc_en = 1'b1;
 
-            isSealed_cap_i  = scr_mepcc_q;
-            setOffset_cap_i = scr_mepcc_q;
-            setOffset_offset_i = mepc_d;
+            isSealed_cap_i = scr_mepcc_q;
+            setAddr_cap_i  = scr_mepcc_q;
+            setAddr_addr_i = mepc_d;
 
-            scr_mepcc_d = setOffset_o[CheriCapWidth-1:0];
+            scr_mepcc_d = setAddr_o[CheriCapWidth-1:0];
             scr_mepcc_d[CheriCapWidth-1] = scr_mepcc_d[CheriCapWidth-1] & ~isSealed_o;
         end
 
@@ -824,53 +824,53 @@ module ibex_cs_registers #(
           // MTVEC are important)
           // then it can be written
           // ALSO: need to update MTVEC when this is written, and vice versa
-          getOffset_cap_i        = scr_wdata_i;
-          setOffset_cap_i        = scr_wdata_i;
+          getAddr_cap_i          = scr_wdata_i;
+          setAddr_cap_i          = scr_wdata_i;
           getBaseAlignment_cap_i = scr_wdata_i;
           isSealed_cap_i         = scr_wdata_i;
-          //setOffset_offset_i     = {getOffset_o[31:2], 2'b01}; // Ibex only allows vectored mode
-          setOffset_offset_i     = {getOffset_o[31:2], getOffset_o[1:0] == 2'b01 ? 2'b01 : 2'b00}; // Ibex only allows vectored mode
+          //setAddr_addr_i       = {getAddr_o[31:2], 2'b01}; // Ibex only allows vectored mode
+          setAddr_addr_i         = {getAddr_o[31:2], getAddr_o[1:0] == 2'b01 ? 2'b01 : 2'b00}; // Ibex only allows vectored mode
 
-          scr_mtcc_d = setOffset_o[CheriCapWidth-1:0];
+          scr_mtcc_d = setAddr_o[CheriCapWidth-1:0];
           // only preserve the tag if the result was exact and the capability was not sealed
           scr_mtcc_d[CheriCapWidth-1] = scr_mtcc_d[CheriCapWidth-1]
-                                      & setOffset_o[CheriCapWidth]
+                                      & setAddr_o[CheriCapWidth]
                                       & ~isSealed_o;
 
           scr_mtcc_en = getBaseAlignment_o == 2'b0;
 
           // also write MTVEC
           mtvec_en = getBaseAlignment_o == 2'b0;
-          mtvec_d  = {getOffset_o[31:2], 2'b01};
+          mtvec_d  = {getAddr_o[31:2], 2'b01};
         end
         SCR_MTDC: begin
           scr_mtdc_d = scr_wdata_i;
           scr_mtdc_en = 1'b1;
         end
         SCR_MEPCC: begin
-          // need to: set bottom bit of the offset to 0
+          // need to: set bottom bit of the addr to 0
           //     if this changes the value, then need to check that the
           //     capability is not sealed; if it is sealed, untag it
           // then write the capability
           // ALSO: need to update MEPC when this is written, and vice versa
-          getOffset_cap_i    = scr_wdata_i;
-          setOffset_cap_i    = scr_wdata_i;
+          getAddr_cap_i      = scr_wdata_i;
+          setAddr_cap_i      = scr_wdata_i;
           isSealed_cap_i     = scr_wdata_i;
           // Ibex does not support disabling the C extension, so only set bottom bit to 0
-          setOffset_offset_i = {getOffset_o[31:1], 1'b0};
+          setAddr_addr_i = {getAddr_o[31:1], 1'b0};
 
-          scr_mepcc_d = setOffset_o[CheriCapWidth-1:0];
+          scr_mepcc_d = setAddr_o[CheriCapWidth-1:0];
           // preserve the tage if the result was exact and:
           //   the capability was unsealed
           //   OR the bottom bit was already 0 (ie no change to capability)
           scr_mepcc_d[CheriCapWidth-1] = scr_mepcc_d[CheriCapWidth-1]
-                                       & setOffset_o[CheriCapWidth]
-                                       & (!isSealed_o | getOffset_cap_i[0] == 1'b0);
+                                       & setAddr_o[CheriCapWidth]
+                                       & (!isSealed_o | getAddr_cap_i[0] == 1'b0);
           scr_mepcc_en = 1'b1;
 
           // also write MEPC
           mepc_en = 1'b1;
-          mepc_d  = {getOffset_o[31:1], 1'b0};
+          mepc_d  = {getAddr_o[31:1], 1'b0};
         end
         SCR_MSCRATCHC: begin
           scr_mscratchc_d = scr_wdata_i;
@@ -1925,14 +1925,14 @@ module ibex_cs_registers #(
     .wrap64_getBaseAlignment_cap (getBaseAlignment_cap_i),
     .wrap64_getBaseAlignment     (getBaseAlignment_o));
 
-  module_wrap64_getOffset module_getOffset (
-    .wrap64_getOffset_cap (getOffset_cap_i),
-    .wrap64_getOffset     (getOffset_o));
+  module_wrap64_getAddr module_getAddr (
+    .wrap64_getAddr_cap (getAddr_cap_i),
+    .wrap64_getAddr     (getAddr_o));
 
-  module_wrap64_setOffset module_setOffset (
-    .wrap64_setOffset_cap    (setOffset_cap_i),
-    .wrap64_setOffset_offset (setOffset_offset_i),
-    .wrap64_setOffset        (setOffset_o));
+  module_wrap64_setAddr module_setAddr (
+    .wrap64_setAddr_cap  (setAddr_cap_i),
+    .wrap64_setAddr_addr (setAddr_addr_i),
+    .wrap64_setAddr      (setAddr_o));
 
   // need to do some extra work once we get the output of getKind to see
   // whether the capability was sealed
