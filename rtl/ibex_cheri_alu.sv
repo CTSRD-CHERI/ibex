@@ -241,13 +241,9 @@ module ibex_cheri_alu #(
 
     // used for checking branch targets
     if (exc_only_i) begin
-      // TODO this assumes that the value of getLength is unsigned, and that
-      // if the base is above the top then the length is 0
-      // The API does not explicitly state whether the base can be above the
-      // top, or what the behaviour is in that case.
       cmp_gt_a_i = {1'b0, btalu_result_i[31:1], 1'b0} + 2;
       cmp_gt_b_i = a_getTop_o;
-      exceptions_a_o.length_violation = cmp_gt_res_o;
+      exceptions_a_o.length_violation = cmp_gt_res_o | ({btalu_result_i[31:1], 1'b0} < a_getBase_o);
 
     end else begin
       case (base_opcode_i)
