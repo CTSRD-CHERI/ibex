@@ -46,8 +46,13 @@ module ibex_compressed_decoder (
         unique case (instr_i[15:13])
           3'b000: begin
             // c.addi4spn -> addi rd', x2, imm
-            instr_o = {2'b0, instr_i[10:7], instr_i[12:11], instr_i[5],
-                       instr_i[6], 2'b00, 5'h02, 3'b000, 2'b01, instr_i[4:2], {OPCODE_OP_IMM}};
+            if (cap_mode_i) begin
+              instr_o = {2'b0, instr_i[10:7], instr_i[12:11], instr_i[5],
+                         instr_i[6], 2'b00, 5'h02, 3'b001, 2'b01, instr_i[4:2], {OPCODE_CHERI}};
+            end else begin
+              instr_o = {2'b0, instr_i[10:7], instr_i[12:11], instr_i[5],
+                         instr_i[6], 2'b00, 5'h02, 3'b000, 2'b01, instr_i[4:2], {OPCODE_OP_IMM}};
+            end
             if (instr_i[12:5] == 8'b0)  illegal_instr_o = 1'b1;
           end
 
