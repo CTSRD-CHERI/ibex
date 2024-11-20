@@ -243,7 +243,9 @@ module ibex_cheri_alu #(
     if (exc_only_i) begin
       cmp_gt_a_i = {1'b0, btalu_result_i[31:1], 1'b0} + 2;
       cmp_gt_b_i = a_getTop_o;
-      exceptions_a_o.length_violation = cmp_gt_res_o | ({btalu_result_i[31:1], 1'b0} < a_getBase_o);
+      cmp_lt_a_i = {1'b0, btalu_result_i[31:1], 1'b0};
+      cmp_lt_b_i = {1'b0, a_getBase_o};
+      exceptions_a_o.length_violation = cmp_gt_res_o | cmp_lt_res_o;
 
     end else begin
       case (base_opcode_i)
@@ -581,13 +583,16 @@ module ibex_cheri_alu #(
               cmp_gt_a_i = alu_result_i;
               cmp_gt_b_i = a_getTop_o;
 
+              cmp_lt_a_i = {1'b0, {a_getAddr_o[IntWidth-1:1], 1'b0}}; // Same as new_addr, but this avoids UNOPT_FLAT warnings
+              cmp_lt_b_i = {1'b0, a_getBase_o};
+
               exceptions_a_o.tag_violation            =  exceptions_a.tag_violation;
               // capability a SHOULD be sealed
               exceptions_a_o.seal_violation           = ~exceptions_a.seal_violation;
               exceptions_a_o.type_violation           =  a_getKind_o != b_getKind_o;
               exceptions_a_o.permit_cinvoke_violation =  exceptions_a.permit_cinvoke_violation;
               exceptions_a_o.permit_execute_violation =  exceptions_a.permit_execute_violation;
-              exceptions_a_o.length_violation         =  cmp_gt_res_o;
+              exceptions_a_o.length_violation         =  cmp_gt_res_o | cmp_lt_res_o;
 
               exceptions_b_o.tag_violation            =  exceptions_b.tag_violation;
               // capability b SHOULD be sealed
@@ -739,11 +744,15 @@ module ibex_cheri_alu #(
                     // TODO: adding to the PC can overflow the 32bit PC and lead to low integer results
                     // CHERI allows this and does not cause a trap, but this behaviour might change
                     // this next line is here to allow easy updating of that logic
-                    logic [32:0] alu_result_int = 33'h2 + (operand_b_int[31] ? {1'b0, alu_result_i[31:1], 1'b0}
+                    logic [32:0] operand_b_overflow_int = (operand_b_int[31] ? {1'b0, alu_result_i[31:1], 1'b0}
                                                                              : {1'b0, alu_result_i[31:1], 1'b0});
+                    logic [32:0] alu_result_int = 33'h2 + operand_b_overflow_int;
 
                     cmp_gt_a_i = alu_result_int;
                     cmp_gt_b_i = a_getTop_o;
+
+                    cmp_lt_a_i = operand_b_overflow_int;
+                    cmp_lt_b_i = {1'b0, a_getBase_o};
 
                     exceptions_a_o.tag_violation            = exceptions_a.tag_violation;
                     // capabilities sealed as Sentries are allowed
@@ -752,7 +761,7 @@ module ibex_cheri_alu #(
                                                               & a_getKind_o != 7'h1E)
                                                             | (a_getKind_o == 7'h1E & operand_b_int != 0);
                     exceptions_a_o.permit_execute_violation = exceptions_a.permit_execute_violation;
-                    exceptions_a_o.length_violation         = cmp_gt_res_o;
+                    exceptions_a_o.length_violation         = cmp_gt_res_o | cmp_lt_res_o;
                     // we don't care about trying to throw the last exception since we do support
                     // compressed instructions
                   end
