@@ -837,7 +837,7 @@ module ibex_cs_registers #(
                                       & setAddr_o[CheriCapWidth]
                                       & ~isSealed_o;
 
-          scr_mtcc_en = getBaseAlignment_o == 2'b0;
+          scr_mtcc_en = 1'b1;
 
           // also write MTVEC
           mtvec_en = 1'b1;
